@@ -4,12 +4,12 @@ using namespace System;
 using namespace Linq;
 
 namespace DeclParser
-{	
+{
 	String^ BaseType::QualifiersToString(Qualifiers q)
 	{
 		return q.ToString()->Replace(",", "");
 	}
-	
+
 	String^ BaseType::TypeToString(BaseType^ type, String^ name, bool anonProto)
 	{
 		if (type == nullptr)
@@ -17,7 +17,7 @@ namespace DeclParser
 
 		if (dynamic_cast<EllipsisType^>(type))
 			return "...";
-		
+
 		auto en = Enumerable::Empty<String^>();
 
 		if (name)
@@ -93,91 +93,28 @@ namespace DeclParser
 		return String::Join(L' ', en);
 	}
 
-	static String^ DeclarationToString(Declaration^ decl, String^ name)
+	bool BaseType::HasQualifier::get()
 	{
-		auto en = Enumerable::Repeat(BaseType::TypeToString(decl->Type, name, false), 1);
-
-		if (decl->Inline)
-			Enumerable::Prepend<String^>(en, "inline");
-
-		if (decl->HasSpecifier)
-			Enumerable::Prepend(en, decl->Specifier.ToString());
-
-		return String::Join(L' ', en);
+		return bool(Qualifier);
 	}
 
-	String^ Declaration::ToString() { return DeclarationToString(this, nullptr); }
-	String^ NamedDeclaration::ToString() { return DeclarationToString(Decl, Name); }
-
-	int FundamentalType::SizeOf(DataModel dm)
+	int BaseType::SizeOf(DataModel)
 	{
-		switch (Type)
-		{
-		case Types::__identifier(char):
-			return 1;
-
-		case Types::__identifier(float):
-			return 4;
-
-		case Types::__identifier(double):
-			switch (Length)
-			{
-			case Lengths::__identifier(long):
-				return 12;
-
-			default:
-				return 8;
-			}
-
-		case Types::__identifier(int):
-			switch (Length)
-			{
-			case Lengths::__identifier(short):
-				return 2;
-
-			case Lengths::LongLong:
-				return 8;
-
-			case Lengths::__identifier(long):
-				return dm == DataModel::LP64 ? 8 : 4;
-
-			default:
-				return 4;
-			}
-
-		default:
-			return 0;
-		}
+		return 0;
 	}
 
-	int PointerType::SizeOf(DataModel dm)
+	void BaseType::SetQualifier(Qualifiers q)
 	{
-		return dm == DataModel::LLP64 || dm == DataModel::LP64 ? 8 : 4;
+		Qualifier = Qualifier | q;
 	}
 
-	int ArrayType::SizeOf(DataModel dm)
+	Object^ BaseType::Clone()
 	{
-		return Count.HasValue && Decay ? Count.Value * Decay->SizeOf(dm) : 0;
+		return MemberwiseClone();
 	}
 
-	int StructType::SizeOf(DataModel dm)
+	String^ BaseType::ToString()
 	{
-		int size = 0;
-
-		if (IsUnion)
-		{
-			for each (auto p in Members)
-				if (auto temp = p.Decl->Type->SizeOf(dm); temp > 0)
-					size = Math::Max(temp, size);
-		}
-		else
-		{
-			for each (auto p in Members)
-				size += p.Decl->Type->SizeOf(dm);
-		}
-
-		return size == 0 ? 1 : size;
+		return TypeToString(this, nullptr, false);
 	}
-
-	int EnumType::SizeOf(DataModel) { return 4; }
 }

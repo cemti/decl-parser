@@ -44,50 +44,34 @@ namespace DeclParser
 
 		property RegexGroups Group
 		{
-			RegexGroups get() { return _groups[Index].Item1; }
+			RegexGroups get();
 		}
 
 		property System::String^ Value
 		{
-			System::String^ get() { return _groups[Index].Item2->Value; }
+			System::String^ get();
 		}
 		
 		property System::Text::RegularExpressions::Match^ CurrentMatch
 		{
-			System::Text::RegularExpressions::Match^ get() { return _groups[Index].Item2; }
+			System::Text::RegularExpressions::Match^ get();
 		}
 
 		property bool HasNext
 		{
-			bool get() { return Index < 0 || Index >= _groups.Count; }
+			bool get();
 		}
 
 		property int TextIndex
 		{
-			int get() { return CurrentMatch->Index; }
+			int get();
 		}
 
-		Lexer() {}
+		Lexer() { }
 		Lexer(System::String^);
 
-		bool TryMoveNext()
-		{
-			++Index;
-			return !HasNext;
-		}
-
-		void MoveNext()
-		{
-			if (!TryMoveNext())
-				throw gcnew System::FormatException("Unexpected end of file.");
-		}
-
-		void Skip()
-		{
-			if (int skipIndex; _skipIndices.TryGetValue(Index, skipIndex))
-				Index = skipIndex;
-			else
-				MoveNext();			
-		}
+		bool TryMoveNext();
+		void MoveNext();
+		void Skip();
 	};
 }

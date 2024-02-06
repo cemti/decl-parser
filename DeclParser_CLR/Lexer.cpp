@@ -6,10 +6,33 @@ using namespace Text::RegularExpressions;
 
 namespace DeclParser
 {
+	auto Lexer::Group::get() -> RegexGroups
+	{
+		return _groups[Index].Item1;
+	}
+
+	String^ Lexer::Value::get()
+	{
+		return _groups[Index].Item2->Value;
+	}
+
+	Match^ Lexer::CurrentMatch::get()
+	{
+		return _groups[Index].Item2;
+	}
+
+	bool Lexer::HasNext::get()
+	{
+		return Index < 0 || Index >= _groups.Count;
+	}
+
+	int Lexer::TextIndex::get()
+	{
+		return CurrentMatch->Index;
+	}
+	
 	Lexer::Lexer(String^ str) : _str(str)
 	{ 
-		ArgumentNullException::ThrowIfNull(str, "str");
-		
 		Index = -1;
 		std::stack<int> stack;
 
@@ -40,5 +63,25 @@ namespace DeclParser
 
 					break;
 				}
+	}
+
+	bool Lexer::TryMoveNext()
+	{
+		++Index;
+		return !HasNext;
+	}
+
+	void Lexer::MoveNext()
+	{
+		if (!TryMoveNext())
+			throw gcnew System::FormatException("Unexpected end of file.");
+	}
+
+	void Lexer::Skip()
+	{
+		if (int skipIndex; _skipIndices.TryGetValue(Index, skipIndex))
+			Index = skipIndex;
+		else
+			MoveNext();
 	}
 }

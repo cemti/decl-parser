@@ -123,22 +123,45 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ArrayType.h" />
+    <ClInclude Include="BaseType.h" />
+    <ClInclude Include="CompositeType.h" />
     <ClInclude Include="DataTypes.h" />
+    <ClInclude Include="Declaration.h" />
+    <ClInclude Include="EllipsisType.h" />
+    <ClInclude Include="EnumType.h" />
+    <ClInclude Include="FunctionType.h" />
+    <ClInclude Include="FundamentalType.h" />
     <ClInclude Include="Lexer.h" />
+    <ClInclude Include="NamedDeclaration.h" />
+    <ClInclude Include="NamedType.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PointerType.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="StructType.h" />
     <ClInclude Include="TypeParser.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArrayType.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
-    <ClCompile Include="DataTypes.cpp" />
+    <ClCompile Include="BaseType.cpp" />
+    <ClCompile Include="CompositeType.cpp" />
+    <ClCompile Include="Declaration.cpp" />
+    <ClCompile Include="EllipsisType.cpp" />
+    <ClCompile Include="EnumType.cpp" />
+    <ClCompile Include="FunctionType.cpp" />
+    <ClCompile Include="FundamentalType.cpp" />
     <ClCompile Include="Lexer.cpp" />
+    <ClCompile Include="NamedDeclaration.cpp" />
+    <ClCompile Include="NamedType.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PointerType.cpp" />
+    <ClCompile Include="StructType.cpp" />
     <ClCompile Include="TypeParser.cpp" />
   </ItemGroup>
   <ItemGroup>

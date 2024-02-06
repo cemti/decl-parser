@@ -6,9 +6,14 @@ using namespace Linq;
 
 namespace DeclParser
 {
+	Declarations^ TypeParser::Variables::get()
+	{
+		return DeclArray[0];
+	}
+	
 	TypeParser::TypeParser(String^ str, BaseType::DataModel dm, bool permissive) : lexer(str), permissive(permissive), dataModel(dm)
 	{
-		FundamentalType::Lengths length{};
+		FundamentalType::Lengths length{ };
 
 		if (dm >= BaseType::DataModel::LLP64)
 			length = FundamentalType::Lengths::LongLong;
@@ -56,8 +61,8 @@ namespace DeclParser
 
 	void TypeParser::Parse()
 	{
-		int declIndex{};
-		bool insideLoop{}, insideFor{};
+		int declIndex{ };
+		bool insideLoop{ }, insideFor{ };
 
 		for (; ; )
 		{
@@ -102,7 +107,7 @@ namespace DeclParser
 				{
 					auto initDecl = gcnew Declaration(initial);
 					auto post = ParsePostType(initDecl);
-					FunctionType^ fType{};
+					FunctionType^ fType{ };
 					bool fnDef = false;
 
 					switch (declIndex)
@@ -248,12 +253,12 @@ namespace DeclParser
 
 	Declaration^ TypeParser::ParseInitialType(bool allowDef)
 	{
-		FundamentalType::Lengths lengths{};
-		FundamentalType::Signs signs{};
-		BaseType::Qualifiers qualifiers{};
-		Declaration::StorageSpecifiers specifiers{};
-		BaseType^ type{};
-		bool sealedType{}, isInline{};
+		FundamentalType::Lengths lengths{ };
+		FundamentalType::Signs signs{ };
+		BaseType::Qualifiers qualifiers{ };
+		Declaration::StorageSpecifiers specifiers{ };
+		BaseType^ type{ };
+		bool sealedType{ }, isInline{ };
 
 		for (; ; lexer.MoveNext())
 		{
@@ -360,7 +365,7 @@ namespace DeclParser
 	{
 		Stack<Lexer::RegexGroups> groups;
 		Stack<Nullable<int>> counts;
-		String^ name{};
+		String^ name{ };
 		
 		for (int endIdx = -1, nextIdx = -1; ; lexer.MoveNext())
 		{
@@ -393,7 +398,7 @@ namespace DeclParser
 					lexer.MoveNext();
 				}
 				else
-					counts.Push({});
+					counts.Push({ });
 
 				groups.Push(group);
 
@@ -600,10 +605,10 @@ namespace DeclParser
 
 	StructType^ TypeParser::ParseStruct(bool isUnion, bool allowDef)
 	{
-		StructType^ st{};
+		StructType^ st{ };
 
 		{
-			String^ name{};
+			String^ name{ };
 			
 			if (lexer.MoveNext(); lexer.Group == Lexer::RegexGroups::Name)
 				name = lexer.Value;
@@ -646,7 +651,7 @@ namespace DeclParser
 
 		st->Define();
 
-		for (bool fam{}; ; )
+		for (bool fam{ }; ; )
 		{
 			lexer.MoveNext();
 
@@ -724,10 +729,10 @@ namespace DeclParser
 
 	EnumType^ TypeParser::ParseEnum(bool allowDef)
 	{
-		EnumType^ st{};
+		EnumType^ st{ };
 
 		{
-			String^ name{};
+			String^ name{ };
 
 			if (lexer.MoveNext(); lexer.Group == Lexer::RegexGroups::Name)
 				name = lexer.Value;
