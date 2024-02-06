@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DeclParser": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
