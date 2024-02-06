@@ -38,7 +38,7 @@ namespace DeclParser
 
         private void WizardClick(object sender, EventArgs e)
         {
-            Wizard wizard = new((BaseType.DataModel)toolStripComboBox1.SelectedIndex);
+            using Wizard wizard = new((BaseType.DataModel)toolStripComboBox1.SelectedIndex);
             wizard.ShowDialog();
 
             if (wizard.DialogResult == DialogResult.OK)

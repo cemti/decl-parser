@@ -13,11 +13,11 @@
         public object? Result { get; private set; }
 
         private TextBox CurrentTextBox =>
-            wizardTabControl.Controls[0] == declTab ?
-                declName :
-            wizardTabControl.Controls[0] == suTab ?
-                suName :
-            throw new ArgumentException();
+            wizardTabControl.Controls[0] == declTab
+                ? declName
+                : wizardTabControl.Controls[0] == suTab
+                ? suName
+                : throw new InvalidOperationException();
 
         public string Placeholder
         {
@@ -71,14 +71,17 @@
         }
 
         public WizardAdder(string declaration, DataModel dataModel) : this(declaration) =>
-            _type = declaration == "void" ? new FundamentalType(FundamentalType.DataType.Void) :
-                new TypeParser($"{declaration} _;", dataModel).Variables[0].Declaration.Type;
+            _type = declaration == "void"
+                ? new FundamentalType(FundamentalType.DataType.Void)
+                : new TypeParser($"{declaration} _;", dataModel).Variables[0].Declaration.Type;
 
         private void OnNameInput(object sender, EventArgs e)
         {
             var textBox = (TextBox)sender;
             textBox.Text = textBox.Text.Trim();
-            button1.Enabled = !(textBox.Text.Length == 0 ? textBox == suName && definedCB.Checked : char.IsAsciiDigit(textBox.Text[0]));
+            button1.Enabled = !(textBox.Text.Length == 0
+                ? textBox == suName && definedCB.Checked
+                : char.IsAsciiDigit(textBox.Text[0]));
         }
 
         private void Commit(object sender, EventArgs e)
@@ -98,15 +101,15 @@
                     break;
 
                 case "Custom":
-                    {
-                        NamedType sType = enumRB.Checked ? new EnumType(suName.Text, !definedCB.Checked) : new StructType(suName.Text, unionRB.Checked, !definedCB.Checked);
+                    NamedType sType = enumRB.Checked
+                        ? new EnumType(suName.Text, !definedCB.Checked)
+                        : new StructType(suName.Text, unionRB.Checked, !definedCB.Checked);
 
-                        if (sType.Anonymous)
-                            sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", string.Empty);
+                    if (sType.Anonymous)
+                        sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", string.Empty);
 
-                        _type = sType;
-                        goto default;
-                    }
+                    _type = sType;
+                    goto default;
 
                 default:
                     _type?.SetQualifier(_qualifiers);
@@ -119,10 +122,10 @@
         }
 
         private void ModifySpecifier(object sender, EventArgs e) =>
-            _specifier ^= Enum.Parse<StorageSpecifier>(((RadioButton)sender).Text);
+            _specifier ^= Enum.Parse<StorageSpecifier>(((RadioButton)sender).Text, true);
 
         private void ModifyQualifiers(object sender, EventArgs e) =>
-            _qualifiers ^= Enum.Parse<TypeQualifiers>(((CheckBox)sender).Text);
+            _qualifiers ^= Enum.Parse<TypeQualifiers>(((CheckBox)sender).Text, true);
 
         private void ToggleFwdDecl(object sender, EventArgs e) =>
             button1.Enabled = !((CheckBox)sender).Checked || suName.Text.Length > 0;
@@ -149,7 +152,7 @@
         private void PointerCellValueChanged(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && sender is DataGridView view && view.Rows[e.RowIndex].Tag is PointerType pType)
-                pType.Qualifiers ^= Enum.Parse<TypeQualifiers>(view.Columns[e.ColumnIndex].HeaderText);
+                pType.Qualifiers ^= Enum.Parse<TypeQualifiers>(view.Columns[e.ColumnIndex].HeaderText, true);
         }
 
         private void GenericRowsAdded<T>(object? sender, DataGridViewRowsAddedEventArgs e) where T : CompositeType, new()
@@ -181,7 +184,7 @@
 
         private void GenericUserDeletingRow(object? sender, DataGridViewRowCancelEventArgs e)
         {
-            if (e.Row != null && sender is DataGridView view)
+            if (e.Row is not null && sender is DataGridView view)
             {
                 if (e.Row.Index > 0 && view.Rows[e.Row.Index - 1].Tag is CompositeType aType)
                     aType.Decay = ((CompositeType?)view.Rows[e.Row.Index].Tag)?.Decay;

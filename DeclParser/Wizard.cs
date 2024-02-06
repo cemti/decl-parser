@@ -16,7 +16,7 @@
 
         protected override void OnLoad(EventArgs e)
         {
-            WizardAdder adder = new("Declaration") { Text = "Variable Declaration", Placeholder = "sample" };
+            using WizardAdder adder = new("Declaration") { Text = "Variable Declaration", Placeholder = "sample" };
             adder.ShowDialog();
 
             if (adder.Result is NamedDeclaration declaration)
@@ -32,7 +32,7 @@
 
         private void BeforeSelectNode(object sender, TreeViewCancelEventArgs e)
         {
-            if (e.Node == null)
+            if (e.Node is null)
                 return;
 
             foreach (ToolStripItem item in addNodeButton.DropDownItems)
@@ -43,126 +43,143 @@
             reviewToolStripMenuItem.Enabled = removeNodeButton.Enabled =
             variadicToolStripMenuItem.Enabled = declarationToolStripMenuItem.Enabled = false;
 
-            if (e.Node.Tag is FundamentalType or string)
+            switch (e.Node.Tag)
             {
-                addNodeButton.Enabled = false;
-                removeNodeButton.Enabled = true;
-            }
-            else if (e.Node.Tag is NamedDeclaration)
-            {
-                declarationToolStripMenuItem.Enabled = false;
-                reviewToolStripMenuItem.Enabled = true;
-
-                if (e.Node != treeView1.Nodes[0])
+                case FundamentalType or string:
+                    addNodeButton.Enabled = false;
                     removeNodeButton.Enabled = true;
+                    break;
 
-                if (e.Node.Nodes.Count > 0)
-                    addNodeButton.Enabled = false;
-            }
-            else if (e.Node.Tag is NamedType nType)
-            {
-                if (!nType.Instantiable)
-                    addNodeButton.Enabled = false;
-                else
-                {
+                case NamedDeclaration:
+                    declarationToolStripMenuItem.Enabled = false;
+                    reviewToolStripMenuItem.Enabled = true;
+
+                    if (e.Node != treeView1.Nodes[0])
+                        removeNodeButton.Enabled = true;
+
+                    if (e.Node.Nodes.Count > 0)
+                        addNodeButton.Enabled = false;
+
+                    break;
+
+                case NamedType nType:
+                    if (nType.Instantiable)
+                    {
+                        foreach (ToolStripItem c in addNodeButton.DropDownItems)
+                            c.Enabled = false;
+
+                        declarationToolStripMenuItem.Enabled = true;
+                    }
+                    else
+                        addNodeButton.Enabled = false;
+
+                    removeNodeButton.Enabled = true;
+                    break;
+
+                case FunctionType fType:
                     foreach (ToolStripItem c in addNodeButton.DropDownItems)
                         c.Enabled = false;
 
+                    if (fType.Parameters.Count > 0 && fType.Parameters[^1].Declaration.Type is EllipsisType)
+                        addNodeButton.Enabled = false;
+                    else
+                        variadicToolStripMenuItem.Enabled = true;
+
                     declarationToolStripMenuItem.Enabled = true;
-                }
+                    removeNodeButton.Enabled = true;
+                    break;
 
-                removeNodeButton.Enabled = true;
-            }
-            else if (e.Node.Tag is FunctionType fType)
-            {
-                foreach (ToolStripItem c in addNodeButton.DropDownItems)
-                    c.Enabled = false;
+                case CompositeType cType:
+                    addNodeButton.Enabled = cType.Decay is null;
+                    removeNodeButton.Enabled = true;
+                    break;
 
-                if (fType.Parameters.Count > 0 && fType.Parameters[^1].Declaration.Type is EllipsisType)
-                    addNodeButton.Enabled = false;
-                else
-                    variadicToolStripMenuItem.Enabled = true;  
-
-                declarationToolStripMenuItem.Enabled = true;
-                removeNodeButton.Enabled = true;
+                case BaseType:
+                    removeNodeButton.Enabled = true;
+                    break;
             }
-            else if (e.Node.Tag is CompositeType cType)
-            {
-                addNodeButton.Enabled = cType.Decay == null;
-                removeNodeButton.Enabled = true;
-            }
-            else if (e.Node.Tag is BaseType)
-                removeNodeButton.Enabled = true;
         }
 
         private void AddTypeToNode(TreeNode node, object obj)
         {
             TreeNode? inNode = null;
 
-            if (obj is BaseType type)
+            switch (obj)
             {
-                inNode = node.Nodes.Add(Summary.Verbose(type, new TypeParser(_dataModel), true));
+                case BaseType type:
+                    inNode = node.Nodes.Add(Summary.Verbose(type, new TypeParser(_dataModel), true));
 
-                if (obj is FunctionType)
-                {
-                    var retNode = inNode.Nodes.Add("Return type");
-                    retNode.Name = "return";
-                    retNode.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
-                }                   
-
-                inNode.Tag = type;
-
-                if (node.Tag is CompositeType cType)
-                    cType.Decay = type;
-                else if (node.Tag is NamedDeclaration declaration)
-                    declaration.Declaration.Type = type;
-                else if (node.Name == "return")
-                    ((FunctionType)node.Parent.Tag).Decay = type;
-            }
-            else if (obj is NamedDeclaration declaration)
-            {
-                static string NewUniqueName() => $"__decl_{Guid.NewGuid().ToString().Replace("-", string.Empty)}";
-
-                var anon = string.IsNullOrWhiteSpace(declaration.Name);
-
-                if (node.Tag is EnumType eType)
-                {
-                    var name = anon ? NewUniqueName() : declaration.Name;
-                    inNode = node.Nodes.Add(name);
-                    inNode.Tag = name;
-                    eType.Enumerators.Add(name);
-                }
-                else
-                {
-                    if (node.Tag is FunctionType fType)
-                        fType.Parameters.Add(declaration);
-                    else if (node.Tag is StructType sType)
+                    if (obj is FunctionType)
                     {
-                        if (anon)
-                            declaration.Name = NewUniqueName();
-
-                        sType.Members.Add(declaration);
+                        var retNode = inNode.Nodes.Add("Return type");
+                        retNode.Name = "return";
+                        retNode.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
                     }
 
-                    if (declaration.Declaration.Type is EllipsisType)
-                        inNode = node.Nodes.Add("...");
+                    inNode.Tag = type;
+
+                    switch (node.Tag)
+                    {
+                        case CompositeType cType:
+                            cType.Decay = type;
+                            break;
+
+                        case NamedDeclaration declaration:
+                            declaration.Declaration.Type = type;
+                            break;
+
+                        case var _ when node.Name == "return":
+                            ((FunctionType)node.Parent.Tag).Decay = type;
+                            break;
+                    }
+
+                    break;
+
+                case NamedDeclaration declaration:
+                    static string NewUniqueName() => $"__decl_{Guid.NewGuid().ToString().Replace("-", string.Empty)}";
+
+                    var anon = string.IsNullOrWhiteSpace(declaration.Name);
+
+                    if (node.Tag is EnumType eType)
+                    {
+                        var name = anon ? NewUniqueName() : declaration.Name;
+                        inNode = node.Nodes.Add(name);
+                        inNode.Tag = name;
+                        eType.Enumerators.Add(name);
+                    }
                     else
                     {
-                        inNode = node.Nodes.Add(declaration.ToString());
+                        if (node.Tag is FunctionType fType)
+                            fType.Parameters.Add(declaration);
+                        else if (node.Tag is StructType sType)
+                        {
+                            if (anon)
+                                declaration.Name = NewUniqueName();
 
-                        if (anon)
-                            inNode.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
+                            sType.Members.Add(declaration);
+                        }
 
-                        AddTypeToNode(inNode, declaration.Declaration.Type);
+                        if (declaration.Declaration.Type is EllipsisType)
+                            inNode = node.Nodes.Add("...");
+                        else
+                        {
+                            inNode = node.Nodes.Add(declaration.ToString());
+
+                            if (anon)
+                                inNode.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
+
+                            AddTypeToNode(inNode, declaration.Declaration.Type);
+                        }
+
+                        inNode.Tag = declaration;
                     }
 
-                    inNode.Tag = declaration;
-                }
+                    break;
             }
 
-            if (inNode != null)
+            if (inNode is not null)
             {
-                if (obj is CompositeType cType2 && cType2.Decay != null)
+                if (obj is CompositeType { Decay: not null } cType2)
                     AddTypeToNode(inNode, cType2.Decay);
                 else
                     treeView1.SelectedNode = inNode;
@@ -196,7 +213,7 @@
                     eType.Enumerators.Remove((string)node.Tag);
                     break;
 
-                case not null when parent.Name == "return":
+                case var _ when parent.Name == "return":
                     ((FunctionType)parent.Parent.Tag).Decay = null;
                     break;
             }
@@ -208,19 +225,11 @@
 
         private void AddTypeOnClick(object sender, EventArgs e)
         {
-            WizardAdder wizard = new(((ToolStripItem)sender).Text, treeView1.SelectedNode.Tag is EnumType);
+            using WizardAdder wizard = new(((ToolStripItem)sender).Text, treeView1.SelectedNode.Tag is EnumType);
             wizard.ShowDialog();
 
-            switch (wizard.Result)
-            {
-                case BaseType type:
-                    AddTypeToNode(type);
-                    break;
-
-                case NamedDeclaration declaration:
-                    AddTypeToNode(declaration);
-                    break;
-            }                
+            if (wizard.Result is BaseType or NamedDeclaration)
+                AddTypeToNode(wizard.Result);
         }
 
         private void AddFunctionOnClick(object sender, EventArgs e) => AddTypeToNode(new FunctionType(null, new List<NamedDeclaration>()));
@@ -228,7 +237,7 @@
 
         private void AddFundamentalTypeOnClick(object sender, EventArgs e)
         {
-            WizardAdder wizard = new(((ToolStripItem)sender).Text, _dataModel);
+            using WizardAdder wizard = new(((ToolStripItem)sender).Text, _dataModel);
             wizard.ShowDialog();
 
             if (wizard.Result is FundamentalType fType)
@@ -258,7 +267,7 @@
         {
             try
             {
-                var form = new Summary(new TypeParser(_dataModel)
+                using Summary form = new(new(_dataModel)
                 {
                     DeclArray = new[] { new List<NamedDeclaration>() { (NamedDeclaration)treeView1.SelectedNode.Tag } }
                 });

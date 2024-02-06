@@ -5,13 +5,13 @@ using namespace System::Collections::Generic;
 
 namespace DeclParser
 {
-    bool FunctionType::HasNoParameters::get()
+    bool FunctionType::HasParameters::get()
     {
         if (Parameters->Count == 0)
-            return true;
+            return false;
 
         auto fType = dynamic_cast<FundamentalType^>(Parameters[0].Declaration->Type);
-        return fType && fType->Type == FundamentalType::DataType::Void;
+        return fType == nullptr || fType->Type != FundamentalType::DataType::Void;
     }
 
     FunctionType::FunctionType() : FunctionType(nullptr, nullptr) { }

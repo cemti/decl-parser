@@ -8,7 +8,7 @@ namespace DeclParser
 	public:
 		property System::Collections::Generic::IList<NamedDeclaration>^ Parameters;
 
-		property bool HasNoParameters
+		property bool HasParameters
 		{
 			bool get();
 		}

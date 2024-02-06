@@ -115,7 +115,7 @@ namespace DeclParser
 					case 0:
 						if (functionType = dynamic_cast<FunctionType^>(postType.Declaration->Type))
 						{
-							if (functionType->HasNoParameters)
+							if (!functionType->HasParameters)
 								break;
 
 							for each (auto parameter in functionType->Parameters)

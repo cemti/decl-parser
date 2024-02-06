@@ -23,7 +23,7 @@ namespace DeclParser
 
             foreach (var (name, declaration) in parser.Variables)
             {
-                if (declaration == null || declaration.Type == null)
+                if (declaration?.Type is null)
                     throw new ArgumentException("Declaration is null.");
                 
                 AddNode(AddNode(treeView1.Nodes, name, new NamedDeclaration(name, declaration)), declaration.Type);
@@ -34,129 +34,133 @@ namespace DeclParser
         {
             StringBuilder name = new();
 
-            while (type != null)
+            while (type is not null)
             {
-                foreach (var qualifiers in Enum.GetValues<TypeQualifiers>())
-                    if (type.Qualifiers.HasFlag(qualifiers))
-                        name.Append(qualifiers == TypeQualifiers.Const ? "constant " : $"{qualifiers} ".ToLower());
+                {
+                    var qualifiers = QualifiersToString(type.Qualifiers);
+
+                    if (!string.IsNullOrEmpty(qualifiers))
+                        name.Append(qualifiers.ToLower().Replace("const", "constant")).Append(' ');
+                }
 
                 if (type is CompositeType cType)
                 {
-                    var deadEnd = cType.Decay == null;
+                    var deadEnd = cType.Decay is null;
 
-                    if (type is PointerType pType)
+                    switch (type)
                     {
-                        name.Append("pointer");
+                        case PointerType pType:
+                            name.Append("pointer");
 
-                        if (simple || deadEnd)
+                            if (simple || deadEnd)
+                                goto outer;
+
+                            name.Append(" to a ");
                             break;
 
-                        name.Append(" to a ");
-                    }
-                    else if (type is ArrayType aType)
-                    {
-                        name.Append("fixed array with ");
+                        case ArrayType aType:
+                            name.Append("fixed array with ");
 
-                        if (aType.Count.HasValue)
-                        {
-                            name.Append($"{aType.Count.Value} instance");
+                            if (aType.Count.HasValue)
+                            {
+                                var count = (int)aType.Count;
+                                name.Append(count).Append(" instance");
 
-                            if (aType.Count.Value != 1)
-                                name.Append('s');
-                        }
-                        else
-                            name.Append("any instances");
+                                if (count != 1)
+                                    name.Append('s');
+                            }
+                            else
+                                name.Append("any instances");
 
-                        if (simple || deadEnd)
+                            if (simple || deadEnd)
+                                goto outer;
+
+                            name.Append(" of a ");
                             break;
 
-                        name.Append(" of a ");
-                    }
-                    else if (type is FunctionType fType1)
-                    {
-                        name.Append("function");
+                        case FunctionType fType1:
+                            name.Append("function");
 
-                        if (simple)
+                            if (simple)
+                                goto outer;
+
+                            if (!fType1.HasParameters)
+                                name.Append(" with no parameters");
+                            else
+                            {
+                                name.Append($" with {fType1.Parameters.Count} parameter");
+
+                                if (fType1.Parameters.Count != 1)
+                                    name.Append('s');
+
+                                name.Append(" (")
+                                    .AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Declaration.Type, a.Name, false)))
+                                    .Append(')');
+                            }
+
+                            if (deadEnd)
+                                goto outer;
+
+                            name.Append(", returning a ");
                             break;
-
-                        if (fType1.HasNoParameters)
-                            name.Append(" with no parameters");
-                        else
-                        {
-                            name.Append($" with {fType1.Parameters.Count} parameter");
-
-                            if (fType1.Parameters.Count != 1)
-                                name.Append('s');
-
-                            name.Append(" (");
-                            name.AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Declaration.Type, a.Name, false)));
-                            name.Append(')');
-                        }
-
-                        if (deadEnd)
-                            break;
-
-                        name.Append(", returning a ");
                     }
 
                     type = cType.Decay;
                 }
                 else
                 {
-                    if (type is FundamentalType fType)
+                    switch (type)
                     {
-                        if (fType.Sign != FundamentalType.TypeSign.None)
-                            name.Append(fType.Sign + " ");
+                        case FundamentalType fType:
+                            if (fType.Sign != FundamentalType.TypeSign.None)
+                                name.Append(fType.Sign).Append(' ');
 
-                        switch (fType.Type)
-                        {
-                            case FundamentalType.DataType.Void:
-                                name.Append("void type");
-                                break;
+                            name.Append(fType.Type switch
+                            {
+                                FundamentalType.DataType.Void => "void type",
+                                FundamentalType.DataType.Char => "character",
+                                FundamentalType.DataType.Int => "whole number",
+                                FundamentalType.DataType.Float or FundamentalType.DataType.Double => "floating point number",
+                                _ => "fundamental type"
+                            });
 
-                            case FundamentalType.DataType.Char:
-                                name.Append("character");
-                                break;
+                            int size = parser.SizeOf(type);
 
-                            case FundamentalType.DataType.Int:
-                                name.Append("whole number");
-                                break;
+                            if (size > 0)
+                            {
+                                name.Append($" that occupies {size} byte");
 
-                            case FundamentalType.DataType.Float:
-                            case FundamentalType.DataType.Double:
-                                name.Append("floating point number");
-                                break;
-                        }
+                                if (size != 1)
+                                    name.Append('s');
+                            }
 
-                        int size = parser.SizeOf(type);
+                            break;
 
-                        if (size > 0)
-                        {
-                            name.Append($" that occupies {size} byte");
+                        case NamedType nType:
+                            if (!nType.Instantiable)
+                                name.Append("incomplete ");
 
-                            if (size != 1)
-                                name.Append('s');
-                        }
+                            name
+                                .Append(type switch
+                                {
+                                    StructType sType => sType.IsUnion ? "union" : "structure",
+                                    EnumType => "enumeration",
+                                    _ => "custom type"
+                                })
+                                .Append($" {(nType.Anonymous ? "that is anonymous" : $"named {nType.Name}")}");
+
+                            break;
+
+                        case EllipsisType:
+                            name.Append("ellipsis");
+                            break;
                     }
-                    else if (type is NamedType nType)
-                    {
-                        if (!nType.Instantiable)
-                            name.Append("incomplete ");
 
-                        if (type is StructType sType)
-                            name.Append(sType.IsUnion ? "union" : "structure");
-                        else if (type is EnumType)
-                            name.Append("enumeration");
-
-                        name.Append($" {(nType.Anonymous ? "that is anonymous" : $"named {nType.Name}")}");
-                    }
-                    else if (type is EllipsisType)
-                        name.Append("Ellipsis");
-
-                    break;
+                    goto outer;
                 }
             }
 
+        outer:
             return name.ToString();
         }
 
@@ -192,18 +196,23 @@ namespace DeclParser
                 _nameSet.Add(nType.Name);
                 sb.AppendLine(" {");
 
-                if (nType is StructType sType)
-                    PopulateText(sType.Members, sb, true);
-                else if (nType is EnumType eType)
-                    sb.AppendLine("  " + new StringBuilder().AppendJoin(", ", eType.Enumerators));
+                switch (nType)
+                {
+                    case StructType sType:
+                        PopulateText(sType.Members, sb, true);
+                        break;
+
+                    case EnumType eType:
+                        sb.Append("  ").AppendLine(string.Join(", ", eType.Enumerators));
+                        break;
+                }
 
                 sb.Append('}');
 
                 if (anon)
-                    sb.Append($" {nType.Name}");
+                    sb.Append(' ').Append(nType.Name);
 
-                sb.AppendLine(";");
-                sb.AppendLine();
+                sb.AppendLine(";").AppendLine();
             }
             else
                 sb.AppendLine(";");
@@ -216,8 +225,8 @@ namespace DeclParser
                 while (tType is CompositeType cType)
                 {
                     if (tType is FunctionType fType)
-                        foreach (var (_, d) in fType.Parameters)
-                            Recursive(d.Type);
+                        foreach (var (_, decl) in fType.Parameters)
+                            Recursive(decl.Type);
 
                     tType = cType.Decay;
                 }
@@ -249,33 +258,42 @@ namespace DeclParser
 
         private void BeforeNodeSelection(object sender, TreeViewCancelEventArgs e)
         {
-            if (e.Node == null)
+            if (e.Node is null)
                 return;
 
             StringBuilder sb = new();
 
-            if (e.Node.Tag is NamedDeclaration declaration)
-                PopulateText(new List<NamedDeclaration> { declaration }, sb);
-            else if (e.Node.Tag is BaseType type)
+            switch (e.Node.Tag)
             {
-                sb.AppendLine($"// {Verbose(type, _parser)}");
+                case NamedDeclaration declaration:
+                    PopulateText(new List<NamedDeclaration> { declaration }, sb);
+                    break;
 
-                if (type is NamedType nType)
-                    PopulateText(nType, sb, true);
-                else
-                    PopulateText(new List<NamedDeclaration> { new(null, new Declaration(type, 0)) }, sb);
+                case BaseType type:
+                    sb.AppendLine($"// {Verbose(type, _parser)}");
+
+                    if (type is NamedType nType)
+                        PopulateText(nType, sb, true);
+                    else
+                        PopulateText(new List<NamedDeclaration> { new(null, new Declaration(type, 0)) }, sb);
+
+                    break;
+
+                case List<NamedDeclaration> declarations:
+                    PopulateText(declarations, sb);
+                    break;
+
+                default:
+                    sb.Append(e.Node.Tag);
+                    break;
             }
-            else if (e.Node.Tag is List<NamedDeclaration> declarations)
-                PopulateText(declarations, sb);
-            else
-                sb.Append(e.Node.Tag);
 
             textBox2.Text = sb.ToString();
         }
 
         private void BeforeNodeExpansion(object sender, TreeViewCancelEventArgs e)
         {
-            if (e.Node == null)
+            if (e.Node is null)
                 return;
 
             foreach (TreeNode node in e.Node.Nodes)
@@ -285,56 +303,68 @@ namespace DeclParser
 
                 node.Name = "visited";
 
-                if (node.Tag is NamedDeclaration d)
-                    AddNode(node, d.Declaration.Type);
-                else if (node.Tag is BaseType type)
+                switch (node.Tag)
                 {
-                    if (type is CompositeType cType)
-                    {
-                        AddNode(node, cType.Decay);
+                    case NamedDeclaration declaration:
+                        AddNode(node, declaration.Declaration.Type);
+                        break;
 
-                        if (type is FunctionType fType && !fType.HasNoParameters)
+                    case BaseType type:
+                        switch (type)
                         {
-                            var pNode = node.Nodes.Add($"Parameters ({fType.Parameters.Count})");
-                            pNode.Tag = fType.Parameters;
-                            pNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+                            case CompositeType cType:
+                                AddNode(node, cType.Decay);
 
-                            foreach (var parameter in fType.Parameters)
-                            {
-                                if (parameter.Declaration.Type is EllipsisType)
-                                    AddNode(pNode, "...");
-                                else
-                                    AddNode(pNode, parameter.Name, parameter);
-                            }
+                                if (type is FunctionType { HasParameters: true } fType)
+                                {
+                                    var pNode = node.Nodes.Add($"Parameters ({fType.Parameters.Count})");
+                                    pNode.Tag = fType.Parameters;
+                                    pNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+
+                                    foreach (var parameter in fType.Parameters)
+                                    {
+                                        if (parameter.Declaration.Type is EllipsisType)
+                                            AddNode(pNode, "...");
+                                        else
+                                            AddNode(pNode, parameter.Name, parameter);
+                                    }
+                                }
+
+                                break;
+
+                            case StructType sType:
+                                if (sType is { Instantiable: true, Members.Count: > 0 })
+                                {
+                                    var sNode = node.Nodes.Add($"Members ({sType.Members.Count})");
+                                    sNode.Tag = sType.Members;
+                                    sNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+
+                                    foreach (var memb in sType.Members)
+                                        AddNode(sNode, memb.Name, memb);
+                                }
+
+                                break;
+
+                            case EnumType enumType:
+                                foreach (var name in enumType.Enumerators)
+                                    AddNode(node, name);
+
+                                break;
                         }
-                    }
-                    else if (type is StructType sType)
-                    {
-                        if (sType.Instantiable && sType.Members.Count > 0)
+
+                        int size = _parser.SizeOf(type);
+
+                        if (size > 0)
                         {
-                            var sNode = node.Nodes.Add($"Members ({sType.Members.Count})");
-                            sNode.Tag = sType.Members;
-                            sNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+                            var sizeInfo = $"Size: {size} byte";
 
-                            foreach (var memb in sType.Members)
-                                AddNode(sNode, memb.Name, memb);
+                            if (size != 1)
+                                sizeInfo += 's';
+
+                            AddNode(node, sizeInfo, size).NodeFont = new Font(treeView1.Font, FontStyle.Bold);
                         }
-                    }
-                    else if (type is EnumType eType)
-                        foreach (var name in eType.Enumerators)
-                            AddNode(node, name);
 
-                    int size = _parser.SizeOf(type);
-
-                    if (size > 0)
-                    {
-                        var sizeInfo = $"Size: {size} byte";
-
-                        if (size != 1)
-                            sizeInfo += 's';
-
-                        AddNode(node, sizeInfo, size).NodeFont = new Font(treeView1.Font, FontStyle.Bold);
-                    }
+                        break;
                 }
             }
         }
