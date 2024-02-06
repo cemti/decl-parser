@@ -6,7 +6,7 @@ namespace DeclParser
 {
 	void EllipsisType::SetQualifier(Qualifiers qualifiers)
 	{
-		if (bool(qualifiers))
+		if (qualifiers != Qualifiers::None)
 			throw gcnew ArgumentException("Ellipsis doesn't accept any qualifier.");
 	}
 }

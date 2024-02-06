@@ -5,11 +5,6 @@ using namespace Linq;
 
 namespace DeclParser
 {
-    bool Declaration::HasSpecifier::get()
-    {
-        return bool(Specifier);
-    }
-    
 	String^ Declaration::DeclarationToString(Declaration^ declaration, String^ name)
 	{
 		auto en = Enumerable::Repeat(BaseType::TypeToString(declaration->Type, name, false), 1);
@@ -17,7 +12,7 @@ namespace DeclParser
 		if (declaration->Inline)
 			Enumerable::Prepend<String^>(en, "inline");
 
-		if (declaration->HasSpecifier)
+		if (declaration->Specifier != StorageSpecifier::None)
 			Enumerable::Prepend(en, declaration->Specifier.ToString());
 
 		return String::Join(L' ', en);

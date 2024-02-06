@@ -8,12 +8,12 @@ namespace DeclParser
 	public:
 		enum class TypeLength
 		{
-			__identifier(short) = 1, __identifier(long), LongLong
+			None, __identifier(short), __identifier(long), LongLong
 		};
 
 		enum class TypeSign
 		{
-			__identifier(signed) = 1, __identifier(unsigned)
+			None, __identifier(signed), __identifier(unsigned)
 		};
 
 		enum class DataType
@@ -42,16 +42,6 @@ namespace DeclParser
 		{
 			TypeLength get();
 			void set(TypeLength value);
-		}
-
-		property bool HasSign
-		{
-			bool get();
-		}
-
-		property bool HasLength
-		{
-			bool get();
 		}
 
 		FundamentalType(DataType type);

@@ -134,7 +134,7 @@ namespace DeclParser
 						break;
 
 					case 1:
-						if (postType.Declaration->HasSpecifier || postType.Declaration->Inline)
+						if (postType.Declaration->Specifier != Declaration::StorageSpecifier::None || postType.Declaration->Inline)
 							throw gcnew FormatException("Storage qualifiers are not allowed in a typedef declaration.");
 					}
 
@@ -283,7 +283,7 @@ namespace DeclParser
 			{
 				auto newLength = Enum::Parse<FundamentalType::TypeLength>(_lexer.Value);
 
-				if (bool(length))
+				if (length != FundamentalType::TypeLength::None)
 				{
 					if (newLength != FundamentalType::TypeLength::__identifier(long) || newLength != length)
 						throw gcnew FormatException("More than sufficient length specifiers.");
@@ -297,7 +297,7 @@ namespace DeclParser
 			}
 
 			case Lexer::RegexGroups::Sign:
-				if (bool(sign))
+				if (sign != FundamentalType::TypeSign::None)
 					throw gcnew FormatException("Duplicate sign specifier.");
 
 				sign = Enum::Parse<FundamentalType::TypeSign>(_lexer.Value);
@@ -333,7 +333,7 @@ namespace DeclParser
 					break;
 				}
 
-				if (auto hasLS = bool(length) || bool(sign); type == nullptr)
+				if (auto hasLS = length != FundamentalType::TypeLength::None || sign != FundamentalType::TypeSign::None; type == nullptr)
 				{
 					if (!hasLS)
 						throw gcnew FormatException("No type specified.");
@@ -348,7 +348,7 @@ namespace DeclParser
 				else if (hasLS)
 					throw gcnew FormatException("Length and sign qualifiers can be applied to fundamental types only.");
 
-				if (bool(qualifiers))
+				if (qualifiers != BaseType::Qualifiers::None)
 				{
 					if (isSealed)
 						type = static_cast<BaseType^>(type->Clone());
@@ -553,7 +553,7 @@ namespace DeclParser
 					
 					auto initialType = ParseInitialType(false);
 
-					if (bool(initialType->Specifier))
+					if (initialType->Specifier != Declaration::StorageSpecifier::None)
 						throw gcnew FormatException("Function parameters can't have storage qualifiers.");
 
 					auto postType = ParsePostType(initialType);
@@ -667,7 +667,7 @@ namespace DeclParser
 			{
 				auto initialType = ParseInitialType(true);
 
-				if (bool(initialType->Specifier))
+				if (initialType->Specifier != Declaration::StorageSpecifier::None)
 					throw gcnew FormatException("Members can't have storage qualifiers.");
 
 				for (; ; )

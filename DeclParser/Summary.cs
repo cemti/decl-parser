@@ -105,7 +105,7 @@ namespace DeclParser
                 {
                     if (type is FundamentalType fType)
                     {
-                        if (fType.HasSign)
+                        if (fType.Sign != FundamentalType.TypeSign.None)
                             name.Append(fType.Sign + " ");
 
                         switch (fType.Type)
@@ -224,7 +224,7 @@ namespace DeclParser
 
                 if (tType is NamedType nType && nType.Instantiable && !_nameSet.Contains(nType.Name))
                 {
-                    if (nType.HasQualifier)
+                    if (nType.Qualifier != Qualifiers.None)
                     {
                         nType = (NamedType)nType.Clone();
                         nType.Qualifier = default;

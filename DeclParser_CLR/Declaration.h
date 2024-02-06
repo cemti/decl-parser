@@ -8,18 +8,13 @@ namespace DeclParser
 	public:
 		enum class StorageSpecifier
 		{
-			__identifier(static) = 1, __identifier(auto),
+			None, __identifier(static), __identifier(auto),
 			__identifier(register), __identifier(extern)
 		};
 
 		property BaseType^ Type;
 		property StorageSpecifier Specifier;
 		property bool Inline;
-
-		property bool HasSpecifier
-		{
-			bool get();
-		}
 
 		static System::String^ DeclarationToString(Declaration^ declaration, System::String^ name);
 

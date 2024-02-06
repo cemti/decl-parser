@@ -29,7 +29,7 @@ namespace DeclParser
 		{
 			if (auto dType = dynamic_cast<PointerType^>(type))
 			{
-				if (type->HasQualifier)
+				if (type->Qualifier != Qualifiers::None)
 				{
 					if (Enumerable::Any(chain))
 						chain = Enumerable::Prepend<String^>(chain, " ");
@@ -70,10 +70,10 @@ namespace DeclParser
 		{
 			chain = Enumerable::Prepend(chain, dType->Type.ToString());
 
-			if (dType->HasLength)
+			if (dType->Length != FundamentalType::TypeLength::None)
 				chain = Enumerable::Prepend(chain, dType->Length == FundamentalType::TypeLength::LongLong ? "long long" : dType->Length.ToString());
 
-			if (dType->HasSign)
+			if (dType->Sign != FundamentalType::TypeSign::None)
 				chain = Enumerable::Prepend(chain, dType->Sign.ToString());
 		}
 		else if (auto dType = dynamic_cast<NamedType^>(type))
@@ -87,15 +87,10 @@ namespace DeclParser
 				chain = Enumerable::Prepend(chain, dType->Keyword);
 		}
 
-		if (type && type->HasQualifier)
+		if (type && type->Qualifier != Qualifiers::None)
 			chain = Enumerable::Prepend(chain, type->Qualifier.ToString());
 
 		return String::Join(L' ', chain);
-	}
-
-	bool BaseType::HasQualifier::get()
-	{
-		return bool(Qualifier);
 	}
 
 	int BaseType::SizeOf(DataModel)

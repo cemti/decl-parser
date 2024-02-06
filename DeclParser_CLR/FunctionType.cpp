@@ -23,7 +23,7 @@ namespace DeclParser
     
     void FunctionType::SetQualifier(Qualifiers qualifiers)
     {
-        if (bool(qualifiers))
+        if (qualifiers != Qualifiers::None)
             throw gcnew ArgumentException("Function doesn't accept any qualifier.");
     }
 }

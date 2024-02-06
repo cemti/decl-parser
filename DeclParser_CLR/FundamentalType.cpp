@@ -16,7 +16,7 @@ namespace DeclParser
 
 	void FundamentalType::Sign::set(TypeSign value)
 	{
-		if (bool(value))
+		if (value != TypeSign::None)
 			switch (_type)
 			{
 				case DataType::__identifier(char) :
@@ -41,7 +41,7 @@ namespace DeclParser
 
 	void FundamentalType::Length::set(TypeLength value)
 	{
-		if (bool(value))
+		if (value != TypeLength::None)
 			switch (_type)
 			{
 				case DataType::__identifier(char) :
@@ -63,16 +63,6 @@ namespace DeclParser
 			}
 	}
 
-	bool FundamentalType::HasSign::get()
-	{
-		return bool(Sign);
-	}
-
-	bool FundamentalType::HasLength::get()
-	{
-		return bool(Length);
-	}
-	
 	FundamentalType::FundamentalType(DataType type) : _type(type) { }
 
 	FundamentalType::FundamentalType(DataType type, TypeSign signs, TypeLength lengths) : _type(type)
