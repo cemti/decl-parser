@@ -8,8 +8,7 @@ namespace DeclParser
 	public:
 		enum class StorageSpecifier
 		{
-			None, __identifier(static), __identifier(auto),
-			__identifier(register), __identifier(extern)
+			None, Static, Auto, Register, Extern
 		};
 
 		property BaseType^ Type;

@@ -36,9 +36,9 @@ namespace DeclParser
 
             while (type != null)
             {
-                foreach (var qualifiers in Enum.GetValues<Qualifiers>())
-                    if (type.Qualifier.HasFlag(qualifiers))
-                        name.Append(qualifiers == Qualifiers.@const ? "constant " : qualifiers.ToString() + " ");
+                foreach (var qualifiers in Enum.GetValues<TypeQualifiers>())
+                    if (type.Qualifiers.HasFlag(qualifiers))
+                        name.Append(qualifiers == TypeQualifiers.Const ? "constant " : $"{qualifiers} ".ToLower());
 
                 if (type is CompositeType cType)
                 {
@@ -110,20 +110,20 @@ namespace DeclParser
 
                         switch (fType.Type)
                         {
-                            case FundamentalType.DataType.@void:
+                            case FundamentalType.DataType.Void:
                                 name.Append("void type");
                                 break;
 
-                            case FundamentalType.DataType.@char:
+                            case FundamentalType.DataType.Char:
                                 name.Append("character");
                                 break;
 
-                            case FundamentalType.DataType.@int:
+                            case FundamentalType.DataType.Int:
                                 name.Append("whole number");
                                 break;
 
-                            case FundamentalType.DataType.@float:
-                            case FundamentalType.DataType.@double:
+                            case FundamentalType.DataType.Float:
+                            case FundamentalType.DataType.Double:
                                 name.Append("floating point number");
                                 break;
                         }
@@ -224,10 +224,10 @@ namespace DeclParser
 
                 if (tType is NamedType nType && nType.Instantiable && !_nameSet.Contains(nType.Name))
                 {
-                    if (nType.Qualifier != Qualifiers.None)
+                    if (nType.Qualifiers != TypeQualifiers.None)
                     {
                         nType = (NamedType)nType.Clone();
-                        nType.Qualifier = default;
+                        nType.Qualifiers = TypeQualifiers.None;
                     }
 
                     StringBuilder sb2 = new();

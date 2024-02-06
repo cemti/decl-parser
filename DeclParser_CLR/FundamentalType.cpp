@@ -19,18 +19,18 @@ namespace DeclParser
 		if (value != TypeSign::None)
 			switch (_type)
 			{
-				case DataType::__identifier(char) :
+				case DataType::Char:
 					_sign = value;
 					break;
 
-				case DataType::__identifier(int) :
-					if (value == TypeSign::__identifier(unsigned))
+				case DataType::Int:
+					if (value == TypeSign::Unsigned)
 						_sign = value;
 
 					break;
 
 				default:
-					throw gcnew ArgumentException("Unsupported sign qualifier '" + value.ToString() + "' for type '" + _type.ToString() + "'.");
+					throw gcnew ArgumentException("Unsupported sign qualifier '" + value.ToString()->ToLower() + "' for type '" + _type.ToString()->ToLower() + "'.");
 			}
 	}
 
@@ -44,22 +44,22 @@ namespace DeclParser
 		if (value != TypeLength::None)
 			switch (_type)
 			{
-				case DataType::__identifier(char) :
+				case DataType::Char:
 					throw gcnew ArgumentException("'char' can't have a length qualifier.");
 
-					case DataType::__identifier(int) :
+					case DataType::Int:
 						_length = value;
 						break;
 
-					case DataType::__identifier(double) :
-						if (value == TypeLength::__identifier(long))
+					case DataType::Double:
+						if (value == TypeLength::Long)
 						{
 							_length = value;
 							break;
 						}
 
 					default:
-						throw gcnew ArgumentException("Unsupported length qualifier '" + value.ToString() + "' for type '" + _type.ToString() + "'.");
+						throw gcnew ArgumentException("Unsupported length qualifier '" + value.ToString()->ToLower() + "' for type '" + _type.ToString()->ToLower() + "'.");
 			}
 	}
 
@@ -75,32 +75,32 @@ namespace DeclParser
 	{
 		switch (Type)
 		{
-			case DataType::__identifier(char) :
+			case DataType::Char:
 				return 1;
 
-			case DataType::__identifier(float) :
+			case DataType::Float:
 				return 4;
 
-			case DataType::__identifier(double) :
+			case DataType::Double:
 				switch (Length)
 				{
-					case TypeLength::__identifier(long) :
+					case TypeLength::Long:
 						return 12;
 
 					default:
 						return 8;
 				}
 
-			case DataType::__identifier(int) :
+			case DataType::Int:
 				switch (Length)
 				{
-					case TypeLength::__identifier(short) :
+					case TypeLength::Short:
 						return 2;
 
 					case TypeLength::LongLong:
 						return 8;
 
-					case TypeLength::__identifier(long) :
+					case TypeLength::Long:
 						return dataModel == DataModel::LP64 ? 8 : 4;
 
 					default:

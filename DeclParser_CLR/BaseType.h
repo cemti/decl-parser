@@ -11,18 +11,18 @@ namespace DeclParser
 		};
 
 		[System::FlagsAttribute]
-		enum class Qualifiers
+		enum class TypeQualifiers
 		{
-			None, __identifier(const), __identifier(volatile), __identifier(restrict) = 4
+			None, Const, Volatile, Restrict = 4
 		};
 
-		static System::String^ QualifiersToString(Qualifiers qualifiers);
+		static System::String^ QualifiersToString(TypeQualifiers qualifiers);
 		static System::String^ TypeToString(BaseType^ type, System::String^ name, bool anonProto);
 
-		property Qualifiers Qualifier;
+		property TypeQualifiers Qualifiers;
 
 		virtual int SizeOf(DataModel dataModel);
-		virtual void SetQualifier(Qualifiers qualifiers);
+		virtual void SetQualifier(TypeQualifiers qualifiers);
 
 		virtual System::Object^ Clone();
 		System::String^ ToString() override;

@@ -7,15 +7,15 @@ namespace DeclParser
 {
 	String^ Declaration::DeclarationToString(Declaration^ declaration, String^ name)
 	{
-		auto en = Enumerable::Repeat(BaseType::TypeToString(declaration->Type, name, false), 1);
+		auto chain = Enumerable::Repeat(BaseType::TypeToString(declaration->Type, name, false), 1);
 
 		if (declaration->Inline)
-			Enumerable::Prepend<String^>(en, "inline");
+			Enumerable::Prepend<String^>(chain, "inline");
 
 		if (declaration->Specifier != StorageSpecifier::None)
-			Enumerable::Prepend(en, declaration->Specifier.ToString());
+			Enumerable::Prepend(chain, declaration->Specifier.ToString()->ToLower());
 
-		return String::Join(L' ', en);
+		return String::Join(L' ', chain);
 	}
 
 	Declaration::Declaration(Declaration^ declaration) : Declaration(declaration->Type, declaration->Specifier, declaration->Inline) { }

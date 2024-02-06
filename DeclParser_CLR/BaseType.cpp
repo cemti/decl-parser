@@ -5,9 +5,12 @@ using namespace Linq;
 
 namespace DeclParser
 {
-	String^ BaseType::QualifiersToString(Qualifiers qualifiers)
+	String^ BaseType::QualifiersToString(TypeQualifiers qualifiers)
 	{
-		return qualifiers.ToString()->Replace(",", "");
+		return String::Join(" ", Enumerable::Except<String^>(
+			qualifiers.ToString()->Split(", ", StringSplitOptions::None),
+			gcnew array<String^> { "None" })
+		)->ToLower();
 	}
 
 	String^ BaseType::TypeToString(BaseType^ type, String^ name, bool anonProto)
@@ -29,12 +32,12 @@ namespace DeclParser
 		{
 			if (auto dType = dynamic_cast<PointerType^>(type))
 			{
-				if (type->Qualifier != Qualifiers::None)
+				if (type->Qualifiers != TypeQualifiers::None)
 				{
 					if (Enumerable::Any(chain))
 						chain = Enumerable::Prepend<String^>(chain, " ");
 
-					chain = Enumerable::Prepend(chain, QualifiersToString(type->Qualifier));
+					chain = Enumerable::Prepend(chain, QualifiersToString(type->Qualifiers));
 				}
 
 				chain = Enumerable::Prepend<String^>(chain, "*");
@@ -68,13 +71,13 @@ namespace DeclParser
 
 		if (auto dType = dynamic_cast<FundamentalType^>(type))
 		{
-			chain = Enumerable::Prepend(chain, dType->Type.ToString());
+			chain = Enumerable::Prepend(chain, dType->Type.ToString()->ToLower());
 
 			if (dType->Length != FundamentalType::TypeLength::None)
-				chain = Enumerable::Prepend(chain, dType->Length == FundamentalType::TypeLength::LongLong ? "long long" : dType->Length.ToString());
+				chain = Enumerable::Prepend(chain, dType->Length == FundamentalType::TypeLength::LongLong ? "long long" : dType->Length.ToString()->ToLower());
 
 			if (dType->Sign != FundamentalType::TypeSign::None)
-				chain = Enumerable::Prepend(chain, dType->Sign.ToString());
+				chain = Enumerable::Prepend(chain, dType->Sign.ToString()->ToLower());
 		}
 		else if (auto dType = dynamic_cast<NamedType^>(type))
 		{
@@ -87,8 +90,8 @@ namespace DeclParser
 				chain = Enumerable::Prepend(chain, dType->Keyword);
 		}
 
-		if (type && type->Qualifier != Qualifiers::None)
-			chain = Enumerable::Prepend(chain, type->Qualifier.ToString());
+		if (type && type->Qualifiers != TypeQualifiers::None)
+			chain = Enumerable::Prepend(chain, QualifiersToString(type->Qualifiers));
 
 		return String::Join(L' ', chain);
 	}
@@ -98,9 +101,9 @@ namespace DeclParser
 		return 0;
 	}
 
-	void BaseType::SetQualifier(Qualifiers qualifiers)
+	void BaseType::SetQualifier(TypeQualifiers qualifiers)
 	{
-		Qualifier = Qualifier | qualifiers;
+		Qualifiers = Qualifiers | qualifiers;
 	}
 
 	Object^ BaseType::Clone()

@@ -10,7 +10,7 @@ namespace DeclParser
 		ArrayType();
 		ArrayType(BaseType^ decayTo);
 
-		void SetQualifier(Qualifiers qualifiers) override;
+		void SetQualifier(TypeQualifiers qualifiers) override;
 		int SizeOf(DataModel dataModel) override;
 	};
 }

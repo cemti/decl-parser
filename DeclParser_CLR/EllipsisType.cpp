@@ -4,9 +4,9 @@ using namespace System;
 
 namespace DeclParser
 {
-	void EllipsisType::SetQualifier(Qualifiers qualifiers)
+	void EllipsisType::SetQualifier(TypeQualifiers qualifiers)
 	{
-		if (qualifiers != Qualifiers::None)
+		if (qualifiers != TypeQualifiers::None)
 			throw gcnew ArgumentException("Ellipsis doesn't accept any qualifier.");
 	}
 }

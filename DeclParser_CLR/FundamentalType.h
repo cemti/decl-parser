@@ -8,19 +8,17 @@ namespace DeclParser
 	public:
 		enum class TypeLength
 		{
-			None, __identifier(short), __identifier(long), LongLong
+			None, Short, Long, LongLong
 		};
 
 		enum class TypeSign
 		{
-			None, __identifier(signed), __identifier(unsigned)
+			None, Signed, Unsigned
 		};
 
 		enum class DataType
 		{
-			__identifier(void), __identifier(char),
-			__identifier(int), __identifier(float),
-			__identifier(double)
+			Void, Char, Int, Float, Double
 		};
 	private:
 		const DataType _type;

@@ -6,6 +6,6 @@ namespace DeclParser
 	public ref class EllipsisType : BaseType
 	{
 	public:
-		void SetQualifier(Qualifiers qualifiers) override;
+		void SetQualifier(TypeQualifiers qualifiers) override;
 	};
 }

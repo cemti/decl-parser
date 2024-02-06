@@ -11,7 +11,7 @@ namespace DeclParser
             return true;
 
         auto fType = dynamic_cast<FundamentalType^>(Parameters[0].Declaration->Type);
-        return fType && fType->Type == FundamentalType::DataType::__identifier(void);
+        return fType && fType->Type == FundamentalType::DataType::Void;
     }
 
     FunctionType::FunctionType() : FunctionType(nullptr, nullptr) { }
@@ -21,9 +21,9 @@ namespace DeclParser
         Parameters = parameters;
     }
     
-    void FunctionType::SetQualifier(Qualifiers qualifiers)
+    void FunctionType::SetQualifier(TypeQualifiers qualifiers)
     {
-        if (qualifiers != Qualifiers::None)
+        if (qualifiers != TypeQualifiers::None)
             throw gcnew ArgumentException("Function doesn't accept any qualifier.");
     }
 }

@@ -7,7 +7,7 @@
     {
         private readonly string? _name;
         private StorageSpecifier _specifier;
-        private Qualifiers _qualifiers;
+        private TypeQualifiers _qualifiers;
         private BaseType? _type;
 
         public object? Result { get; private set; }
@@ -71,7 +71,7 @@
         }
 
         public WizardAdder(string declaration, DataModel dataModel) : this(declaration) =>
-            _type = declaration == "void" ? new FundamentalType(FundamentalType.DataType.@void) :
+            _type = declaration == "void" ? new FundamentalType(FundamentalType.DataType.Void) :
                 new TypeParser($"{declaration} _;", dataModel).Variables[0].Declaration.Type;
 
         private void OnNameInput(object sender, EventArgs e)
@@ -102,7 +102,7 @@
                         NamedType sType = enumRB.Checked ? new EnumType(suName.Text, !definedCB.Checked) : new StructType(suName.Text, unionRB.Checked, !definedCB.Checked);
 
                         if (sType.Anonymous)
-                            sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", "");
+                            sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", string.Empty);
 
                         _type = sType;
                         goto default;
@@ -122,7 +122,7 @@
             _specifier ^= Enum.Parse<StorageSpecifier>(((RadioButton)sender).Text);
 
         private void ModifyQualifiers(object sender, EventArgs e) =>
-            _qualifiers ^= Enum.Parse<Qualifiers>(((CheckBox)sender).Text);
+            _qualifiers ^= Enum.Parse<TypeQualifiers>(((CheckBox)sender).Text);
 
         private void ToggleFwdDecl(object sender, EventArgs e) =>
             button1.Enabled = !((CheckBox)sender).Checked || suName.Text.Length > 0;
@@ -149,7 +149,7 @@
         private void PointerCellValueChanged(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && sender is DataGridView view && view.Rows[e.RowIndex].Tag is PointerType pType)
-                pType.Qualifier ^= Enum.Parse<Qualifiers>(view.Columns[e.ColumnIndex].HeaderText);
+                pType.Qualifiers ^= Enum.Parse<TypeQualifiers>(view.Columns[e.ColumnIndex].HeaderText);
         }
 
         private void GenericRowsAdded<T>(object? sender, DataGridViewRowsAddedEventArgs e) where T : CompositeType, new()

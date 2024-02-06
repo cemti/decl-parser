@@ -8,7 +8,7 @@ namespace DeclParser
 
 	ArrayType::ArrayType(BaseType^ decayTo) : CompositeType(decayTo) { }
 
-	void ArrayType::SetQualifier(Qualifiers qualifiers)
+	void ArrayType::SetQualifier(TypeQualifiers qualifiers)
 	{
 		Decay->SetQualifier(qualifiers);
 	}

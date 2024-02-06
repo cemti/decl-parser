@@ -255,7 +255,7 @@ namespace DeclParser
 	{
 		FundamentalType::TypeLength length{ };
 		FundamentalType::TypeSign sign{ };
-		BaseType::Qualifiers qualifiers{ };
+		BaseType::TypeQualifiers qualifiers{ };
 		Declaration::StorageSpecifier specifiers{ };
 		BaseType^ type{ };
 		bool isSealed{ }, isInline{ };
@@ -276,16 +276,16 @@ namespace DeclParser
 				if (type)
 					throw gcnew FormatException("Type already specified.");
 
-				type = gcnew FundamentalType(Enum::Parse<FundamentalType::DataType>(_lexer.Value));
+				type = gcnew FundamentalType(Enum::Parse<FundamentalType::DataType>(_lexer.Value, true));
 				break;
 
 			case Lexer::RegexGroups::Length:
 			{
-				auto newLength = Enum::Parse<FundamentalType::TypeLength>(_lexer.Value);
+				auto newLength = Enum::Parse<FundamentalType::TypeLength>(_lexer.Value, true);
 
 				if (length != FundamentalType::TypeLength::None)
 				{
-					if (newLength != FundamentalType::TypeLength::__identifier(long) || newLength != length)
+					if (newLength != FundamentalType::TypeLength::Long || newLength != length)
 						throw gcnew FormatException("More than sufficient length specifiers.");
 
 					length = FundamentalType::TypeLength::LongLong;
@@ -300,21 +300,21 @@ namespace DeclParser
 				if (sign != FundamentalType::TypeSign::None)
 					throw gcnew FormatException("Duplicate sign specifier.");
 
-				sign = Enum::Parse<FundamentalType::TypeSign>(_lexer.Value);
+				sign = Enum::Parse<FundamentalType::TypeSign>(_lexer.Value, true);
 				break;
 
 			case Lexer::RegexGroups::Qualifier:
-				qualifiers = qualifiers | Enum::Parse<BaseType::Qualifiers>(_lexer.Value);
+				qualifiers = qualifiers | Enum::Parse<BaseType::TypeQualifiers>(_lexer.Value, true);
 				break;
 
 			case Lexer::RegexGroups::Specifier:
 			{
-				auto flag = Enum::Parse<Declaration::StorageSpecifier>(_lexer.Value);
+				auto parsedSpecifier = Enum::Parse<Declaration::StorageSpecifier>(_lexer.Value, true);
 
-				if (flag == specifiers)
-					throw gcnew FormatException("Duplicate '" + flag.ToString() + "'.");
+				if (parsedSpecifier == specifiers)
+					throw gcnew FormatException("Duplicate '" + parsedSpecifier.ToString()->ToLower() + "'.");
 
-				specifiers = flag;
+				specifiers = parsedSpecifier;
 				break;
 			}
 
@@ -338,7 +338,7 @@ namespace DeclParser
 					if (!hasLS)
 						throw gcnew FormatException("No type specified.");
 
-					type = gcnew FundamentalType(FundamentalType::DataType::__identifier(int), sign, length);
+					type = gcnew FundamentalType(FundamentalType::DataType::Int, sign, length);
 				}
 				else if (auto fType = dynamic_cast<FundamentalType^>(type); fType && !isSealed)
 				{
@@ -348,7 +348,7 @@ namespace DeclParser
 				else if (hasLS)
 					throw gcnew FormatException("Length and sign qualifiers can be applied to fundamental types only.");
 
-				if (qualifiers != BaseType::Qualifiers::None)
+				if (qualifiers != BaseType::TypeQualifiers::None)
 				{
 					if (isSealed)
 						type = static_cast<BaseType^>(type->Clone());
@@ -382,7 +382,7 @@ namespace DeclParser
 				if (name || groups.Count > 0)
 					throw gcnew FormatException("Invalid declaration.");
 
-				declaration->Type->SetQualifier(Enum::Parse<FundamentalType::Qualifiers>(_lexer.Value));
+				declaration->Type->SetQualifier(Enum::Parse<FundamentalType::TypeQualifiers>(_lexer.Value, true));
 				continue;
 
 			case Lexer::RegexGroups::ArrayBrace:
@@ -504,20 +504,20 @@ namespace DeclParser
 			nextIndex = -1;
 		}
 
-		if (dynamic_cast<PointerType^>(declaration->Type) == nullptr && declaration->Type->Qualifier == BaseType::Qualifiers::__identifier(restrict))
+		if (dynamic_cast<PointerType^>(declaration->Type) == nullptr && declaration->Type->Qualifiers == BaseType::TypeQualifiers::Restrict)
 			throw gcnew FormatException("Only pointers can have 'restrict' qualifier.");
 
 		if (dynamic_cast<FunctionType^>(declaration->Type))
 		{
-			if (declaration->Specifier == Declaration::StorageSpecifier::__identifier(auto))
+			if (declaration->Specifier == Declaration::StorageSpecifier::Auto)
 				throw gcnew FormatException("Functions can't have 'auto' storage qualifier.");
 			
-			if (declaration->Specifier == Declaration::StorageSpecifier::__identifier(extern))
+			if (declaration->Specifier == Declaration::StorageSpecifier::Extern)
 				declaration->Specifier = Declaration::StorageSpecifier();
 		}
 
 		if (name)
-			if (auto fType = dynamic_cast<FundamentalType^>(declaration->Type); fType && fType->Type == FundamentalType::DataType::__identifier(void))
+			if (auto fType = dynamic_cast<FundamentalType^>(declaration->Type); fType && fType->Type == FundamentalType::DataType::Void)
 				throw gcnew FormatException("Invalid declaration.");
 
 		return NamedDeclaration(name, declaration);
@@ -573,7 +573,7 @@ namespace DeclParser
 					if (_lexer.Value != ",")
 						break;
 
-					if (auto fundamentalType = dynamic_cast<FundamentalType^>(postType.Declaration->Type); fundamentalType && fundamentalType->Type == FundamentalType::DataType::__identifier(void))
+					if (auto fundamentalType = dynamic_cast<FundamentalType^>(postType.Declaration->Type); fundamentalType && fundamentalType->Type == FundamentalType::DataType::Void)
 						break;
 
 					_lexer.MoveNext();

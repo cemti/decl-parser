@@ -35,14 +35,14 @@ namespace DeclParser
 
 		if (IsUnion)
 		{
-			for each (auto p in Members)
-				if (auto sizeOf = p.Declaration->Type->SizeOf(dataModel); sizeOf > 0)
+			for each (auto member in Members)
+				if (auto sizeOf = member.Declaration->Type->SizeOf(dataModel); sizeOf > 0)
 					size = Math::Max(sizeOf, size);
 		}
 		else
 		{
-			for each (auto p in Members)
-				size += p.Declaration->Type->SizeOf(dataModel);
+			for each (auto member in Members)
+				size += member.Declaration->Type->SizeOf(dataModel);
 		}
 
 		return size == 0 ? 1 : size;

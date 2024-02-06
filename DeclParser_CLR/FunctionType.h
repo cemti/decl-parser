@@ -16,6 +16,6 @@ namespace DeclParser
 		FunctionType();
 		FunctionType(BaseType^ decayTo, System::Collections::Generic::IList<NamedDeclaration>^ parameters);
 
-		void SetQualifier(Qualifiers qualifiers) override;
+		void SetQualifier(TypeQualifiers qualifiers) override;
 	};
 }
