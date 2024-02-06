@@ -8,6 +8,8 @@ namespace DeclParser
 {
 	Lexer::Lexer(String^ str) : _str(str)
 	{ 
+		ArgumentNullException::ThrowIfNull(str, "str");
+		
 		Index = -1;
 		std::stack<int> stack;
 
