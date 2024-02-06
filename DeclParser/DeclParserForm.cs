@@ -38,24 +38,24 @@ namespace DeclParser
 
         private void WizardClick(object sender, EventArgs e)
         {
-            Wizard w = new((BaseType.DataModel)toolStripComboBox1.SelectedIndex);
-            w.ShowDialog();
+            Wizard wizard = new((BaseType.DataModel)toolStripComboBox1.SelectedIndex);
+            wizard.ShowDialog();
 
-            if (w.DialogResult == DialogResult.OK)
-                textBox1.SelectedText = w.Buffer;
+            if (wizard.DialogResult == DialogResult.OK)
+                textBox1.SelectedText = wizard.Buffer;
         }
 
         private void ParseClickFile(object sender, EventArgs e)
         {
-            using OpenFileDialog ofd = new() { Filter = "C source file|*.c;*.h|C++ source file|*.cc;*.cxx;*.cpp;*.hpp", Multiselect = true };
+            using OpenFileDialog dialog = new() { Filter = "C source file|*.c;*.h|C++ source file|*.cc;*.cxx;*.cpp;*.hpp", Multiselect = true };
 
-            if (ofd.ShowDialog() == DialogResult.OK)
+            if (dialog.ShowDialog() == DialogResult.OK)
             {
                 string? text = null;
                 
                 try
                 {
-                    foreach (var fileName in ofd.FileNames)
+                    foreach (var fileName in dialog.FileNames)
                     {
                         text = File.ReadAllText(fileName);
 

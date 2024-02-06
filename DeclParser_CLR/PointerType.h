@@ -6,8 +6,8 @@ namespace DeclParser
 	{
 	public:
 		PointerType() : PointerType(nullptr) { }
-		PointerType(BaseType^ decaysTo) : CompositeType(decaysTo) { }
+		PointerType(BaseType^ decayTo) : CompositeType(decayTo) { }
 
-		int SizeOf(DataModel dm) override;
+		int SizeOf(DataModel dataModel) override;
 	};
 }

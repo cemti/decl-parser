@@ -5,10 +5,10 @@
     
     public partial class WizardAdder : Form
     {
-        private readonly string? name;
-        private StorageSpecifiers stSpecifier;
-        private Qualifiers qualifiers;
-        private BaseType? type;
+        private readonly string? _name;
+        private StorageSpecifier _specifier;
+        private Qualifiers _qualifiers;
+        private BaseType? _type;
 
         public object? Result { get; private set; }
 
@@ -29,7 +29,7 @@
         {
             InitializeComponent();
             wizardTabControl.Controls.Clear();
-            this.name = name;
+            _name = name;
 
             switch (name)
             {
@@ -70,9 +70,9 @@
             }
         }
 
-        public WizardAdder(string decl, DataModel dataModel) : this(decl) =>
-            type = decl == "void" ? new FundamentalType(FundamentalType.Types.@void) :
-                new TypeParser($"{decl} _;", dataModel).Variables[0].Decl.Type;
+        public WizardAdder(string declaration, DataModel dataModel) : this(declaration) =>
+            _type = declaration == "void" ? new FundamentalType(FundamentalType.DataType.@void) :
+                new TypeParser($"{declaration} _;", dataModel).Variables[0].Declaration.Type;
 
         private void OnNameInput(object sender, EventArgs e)
         {
@@ -83,10 +83,10 @@
 
         private void Commit(object sender, EventArgs e)
         {
-            switch (name)
+            switch (_name)
             {
                 case "Declaration":
-                    Result = new NamedDeclaration(declName.Text, new Declaration(null, stSpecifier, inlineCB.Checked));
+                    Result = new NamedDeclaration(declName.Text, new Declaration(null, _specifier, inlineCB.Checked));
                     break;
 
                 case "Pointer":
@@ -104,13 +104,13 @@
                         if (sType.Anonymous)
                             sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", "");
 
-                        type = sType;
+                        _type = sType;
                         goto default;
                     }
 
                 default:
-                    type?.SetQualifier(qualifiers);
-                    Result = type;
+                    _type?.SetQualifier(_qualifiers);
+                    Result = _type;
                     break;
             }
 
@@ -119,10 +119,10 @@
         }
 
         private void ModifySpecifier(object sender, EventArgs e) =>
-            stSpecifier ^= Enum.Parse<StorageSpecifiers>(((RadioButton)sender).Text);
+            _specifier ^= Enum.Parse<StorageSpecifier>(((RadioButton)sender).Text);
 
         private void ModifyQualifiers(object sender, EventArgs e) =>
-            qualifiers ^= Enum.Parse<Qualifiers>(((CheckBox)sender).Text);
+            _qualifiers ^= Enum.Parse<Qualifiers>(((CheckBox)sender).Text);
 
         private void ToggleFwdDecl(object sender, EventArgs e) =>
             button1.Enabled = !((CheckBox)sender).Checked || suName.Text.Length > 0;

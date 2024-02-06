@@ -6,42 +6,42 @@ namespace DeclParser
 	public ref class FundamentalType : BaseType
 	{
 	public:
-		enum class Lengths
+		enum class TypeLength
 		{
 			__identifier(short) = 1, __identifier(long), LongLong
 		};
 
-		enum class Signs
+		enum class TypeSign
 		{
 			__identifier(signed) = 1, __identifier(unsigned)
 		};
 
-		enum class Types
+		enum class DataType
 		{
 			__identifier(void), __identifier(char),
 			__identifier(int), __identifier(float),
 			__identifier(double)
 		};
 	private:
-		const Types type;
-		Signs sign;
-		Lengths length;
+		const DataType _type;
+		TypeSign _sign;
+		TypeLength _length;
 	public:
-		property Types Type
+		property DataType Type
 		{
-			Types get();
+			DataType get();
 		}
 
-		property Signs Sign
+		property TypeSign Sign
 		{
-			Signs get();
-			void set(Signs value);			
+			TypeSign get();
+			void set(TypeSign value);			
 		}
 
-		property Lengths Length
+		property TypeLength Length
 		{
-			Lengths get();
-			void set(Lengths value);
+			TypeLength get();
+			void set(TypeLength value);
 		}
 
 		property bool HasSign
@@ -54,10 +54,10 @@ namespace DeclParser
 			bool get();
 		}
 
-		FundamentalType(Types type);
-		FundamentalType(Types type, Signs signs, Lengths lengths);
+		FundamentalType(DataType type);
+		FundamentalType(DataType type, TypeSign signs, TypeLength lengths);
 
-		int SizeOf(DataModel dm) override;
+		int SizeOf(DataModel dataModel) override;
 	};
 
 }

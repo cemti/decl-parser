@@ -1,28 +1,29 @@
 #include "pch.h"
 #include "DataTypes.h"
 using namespace System;
+using namespace System::Collections::Generic;
 
 namespace DeclParser
 {
-    bool FunctionType::HasNoParams::get()
+    bool FunctionType::HasNoParameters::get()
     {
         if (Parameters->Count == 0)
             return true;
 
-        auto fType = dynamic_cast<FundamentalType^>(Parameters[0].Decl->Type);
-        return fType && fType->Type == FundamentalType::Types::__identifier(void);
+        auto fType = dynamic_cast<FundamentalType^>(Parameters[0].Declaration->Type);
+        return fType && fType->Type == FundamentalType::DataType::__identifier(void);
     }
 
     FunctionType::FunctionType() : FunctionType(nullptr, nullptr) { }
 
-    FunctionType::FunctionType(BaseType^ decaysTo, Declarations^ params) : CompositeType(decaysTo)
+    FunctionType::FunctionType(BaseType^ decayTo, IList<NamedDeclaration>^ parameters) : CompositeType(decayTo)
     {
-        Parameters = params;
+        Parameters = parameters;
     }
     
-    void FunctionType::SetQualifier(Qualifiers q)
+    void FunctionType::SetQualifier(Qualifiers qualifiers)
     {
-        if (bool(q))
+        if (bool(qualifiers))
             throw gcnew ArgumentException("Function doesn't accept any qualifier.");
     }
 }

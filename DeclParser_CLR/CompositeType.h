@@ -6,7 +6,7 @@ namespace DeclParser
 	public ref class CompositeType abstract : BaseType
 	{
 	protected:
-		CompositeType(BaseType^ decaysTo);
+		CompositeType(BaseType^ decayTo);
 	public:
 		property BaseType^ Decay;
 

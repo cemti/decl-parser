@@ -6,15 +6,15 @@ namespace DeclParser
 {
 	ArrayType::ArrayType() : ArrayType(nullptr) { }
 
-	ArrayType::ArrayType(BaseType^ decaysTo) : CompositeType(decaysTo) { }
+	ArrayType::ArrayType(BaseType^ decayTo) : CompositeType(decayTo) { }
 
-	void ArrayType::SetQualifier(Qualifiers q)
+	void ArrayType::SetQualifier(Qualifiers qualifiers)
 	{
-		Decay->SetQualifier(q);
+		Decay->SetQualifier(qualifiers);
 	}
 
-	int ArrayType::SizeOf(DataModel dm)
+	int ArrayType::SizeOf(DataModel dataModel)
 	{
-		return Count.HasValue && Decay ? Count.Value * Decay->SizeOf(dm) : 0;
+		return Count.HasValue && Decay ? Count.Value * Decay->SizeOf(dataModel) : 0;
 	}
 }

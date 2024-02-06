@@ -8,9 +8,9 @@ namespace DeclParser
 		property System::Nullable<int> Count;
 
 		ArrayType();
-		ArrayType(BaseType^ decaysTo);
+		ArrayType(BaseType^ decayTo);
 
-		void SetQualifier(Qualifiers q) override;
-		int SizeOf(DataModel dm) override;
+		void SetQualifier(Qualifiers qualifiers) override;
+		int SizeOf(DataModel dataModel) override;
 	};
 }

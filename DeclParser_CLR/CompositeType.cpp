@@ -4,9 +4,9 @@ using namespace System;
 
 namespace DeclParser
 {
-    CompositeType::CompositeType(BaseType^ decaysTo)
+    CompositeType::CompositeType(BaseType^ decayTo)
 	{
-		Decay = decaysTo;
+		Decay = decayTo;
 	}
 
 	Object^ CompositeType::Clone()

@@ -6,14 +6,14 @@ namespace DeclParser
 	public ref class Declaration
 	{
 	public:
-		enum class StorageSpecifiers
+		enum class StorageSpecifier
 		{
 			__identifier(static) = 1, __identifier(auto),
 			__identifier(register), __identifier(extern)
 		};
 
 		property BaseType^ Type;
-		property StorageSpecifiers Specifier;
+		property StorageSpecifier Specifier;
 		property bool Inline;
 
 		property bool HasSpecifier
@@ -21,12 +21,12 @@ namespace DeclParser
 			bool get();
 		}
 
-		static System::String^ DeclarationToString(Declaration^ decl, System::String^ name);
+		static System::String^ DeclarationToString(Declaration^ declaration, System::String^ name);
 
-		Declaration(Declaration^ decl);
+		Declaration(Declaration^ declaration);
 		Declaration(BaseType^ type);
-		Declaration(BaseType^ type, StorageSpecifiers specifier);
-		Declaration(BaseType^ type, StorageSpecifiers specifier, bool isInline);
+		Declaration(BaseType^ type, StorageSpecifier specifier);
+		Declaration(BaseType^ type, StorageSpecifier specifier, bool isInline);
 
 		System::String^ ToString() override;
 	};

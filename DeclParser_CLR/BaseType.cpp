@@ -5,9 +5,9 @@ using namespace Linq;
 
 namespace DeclParser
 {
-	String^ BaseType::QualifiersToString(Qualifiers q)
+	String^ BaseType::QualifiersToString(Qualifiers qualifiers)
 	{
-		return q.ToString()->Replace(",", "");
+		return qualifiers.ToString()->Replace(",", "");
 	}
 
 	String^ BaseType::TypeToString(BaseType^ type, String^ name, bool anonProto)
@@ -18,12 +18,12 @@ namespace DeclParser
 		if (dynamic_cast<EllipsisType^>(type))
 			return "...";
 
-		auto en = Enumerable::Empty<String^>();
+		auto chain = Enumerable::Empty<String^>();
 
 		if (name)
-			en = Enumerable::Append(en, name);
+			chain = Enumerable::Append(chain, name);
 
-		bool prevFlag = false;
+		bool hasPointer = false;
 
 		while (auto cType = dynamic_cast<CompositeType^>(type))
 		{
@@ -31,66 +31,66 @@ namespace DeclParser
 			{
 				if (type->HasQualifier)
 				{
-					if (Enumerable::Any(en))
-						en = Enumerable::Prepend<String^>(en, " ");
+					if (Enumerable::Any(chain))
+						chain = Enumerable::Prepend<String^>(chain, " ");
 
-					en = Enumerable::Prepend(en, QualifiersToString(type->Qualifier));
+					chain = Enumerable::Prepend(chain, QualifiersToString(type->Qualifier));
 				}
 
-				en = Enumerable::Prepend<String^>(en, "*");
-				prevFlag = true;
+				chain = Enumerable::Prepend<String^>(chain, "*");
+				hasPointer = true;
 			}
 			else
 			{
-				if (prevFlag)
+				if (hasPointer)
 				{
-					en = Enumerable::Prepend<String^>(Enumerable::Append<String^>(en, ")"), "(");
-					prevFlag = false;
+					chain = Enumerable::Prepend<String^>(Enumerable::Append<String^>(chain, ")"), "(");
+					hasPointer = false;
 				}
 
 				if (auto dType = dynamic_cast<FunctionType^>(type))
 				{
-					auto params = Enumerable::Empty<String^>();
+					auto parameters = Enumerable::Empty<String^>();
 
 					for each (auto p in dType->Parameters)
-						params = Enumerable::Append(params, TypeToString(p.Decl->Type, p.Name, false));
+						parameters = Enumerable::Append(parameters, TypeToString(p.Declaration->Type, p.Name, false));
 
-					en = Enumerable::Concat<String^>(en, gcnew array<String^> { "(", String::Join(L", ", params), ")" });
+					chain = Enumerable::Concat<String^>(chain, gcnew array<String^> { "(", String::Join(L", ", parameters), ")" });
 				}
 				else if (auto dType = dynamic_cast<ArrayType^>(type))
-					en = Enumerable::Append(en, String::Format("[{0}]", dType->Count));
+					chain = Enumerable::Append(chain, String::Format("[{0}]", dType->Count));
 			}
 
 			type = cType->Decay;
 		}
 
-		en = Enumerable::Repeat(String::Concat(en), 1);
+		chain = Enumerable::Repeat(String::Concat(chain), 1);
 
 		if (auto dType = dynamic_cast<FundamentalType^>(type))
 		{
-			en = Enumerable::Prepend(en, dType->Type.ToString());
+			chain = Enumerable::Prepend(chain, dType->Type.ToString());
 
 			if (dType->HasLength)
-				en = Enumerable::Prepend(en, dType->Length == FundamentalType::Lengths::LongLong ? "long long" : dType->Length.ToString());
+				chain = Enumerable::Prepend(chain, dType->Length == FundamentalType::TypeLength::LongLong ? "long long" : dType->Length.ToString());
 
 			if (dType->HasSign)
-				en = Enumerable::Prepend(en, dType->Sign.ToString());
+				chain = Enumerable::Prepend(chain, dType->Sign.ToString());
 		}
 		else if (auto dType = dynamic_cast<NamedType^>(type))
 		{
 			anonProto &= name == nullptr;
 
 			if (!dType->Anonymous || !anonProto)
-				en = Enumerable::Prepend(en, dType->Name);
+				chain = Enumerable::Prepend(chain, dType->Name);
 
 			if (!dType->Anonymous || anonProto)
-				en = Enumerable::Prepend(en, dType->Keyword);
+				chain = Enumerable::Prepend(chain, dType->Keyword);
 		}
 
 		if (type && type->HasQualifier)
-			en = Enumerable::Prepend(en, type->Qualifier.ToString());
+			chain = Enumerable::Prepend(chain, type->Qualifier.ToString());
 
-		return String::Join(L' ', en);
+		return String::Join(L' ', chain);
 	}
 
 	bool BaseType::HasQualifier::get()
@@ -103,9 +103,9 @@ namespace DeclParser
 		return 0;
 	}
 
-	void BaseType::SetQualifier(Qualifiers q)
+	void BaseType::SetQualifier(Qualifiers qualifiers)
 	{
-		Qualifier = Qualifier | q;
+		Qualifier = Qualifier | qualifiers;
 	}
 
 	Object^ BaseType::Clone()

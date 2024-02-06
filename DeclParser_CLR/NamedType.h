@@ -5,8 +5,8 @@ namespace DeclParser
 {
 	public ref class NamedType abstract : BaseType
 	{
-		const bool anon;
-		System::Byte stage;
+		const bool _anonymous;
+		System::Byte _stage;
 	public:
 		property System::String^ Name;
 
@@ -39,7 +39,4 @@ namespace DeclParser
 
 		void Define();		
 	};
-
-	using DeclaredNamedTypes = System::Collections::Generic::Dictionary<System::String^, NamedType^>;
-	using Declarations = System::Collections::Generic::List<NamedDeclaration>;
 }

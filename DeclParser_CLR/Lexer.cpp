@@ -31,12 +31,12 @@ namespace DeclParser
 		return CurrentMatch->Index;
 	}
 	
-	Lexer::Lexer(String^ str) : _str(str)
+	Lexer::Lexer(String^ input) : _input(input)
 	{ 
 		Index = -1;
 		std::stack<int> stack;
 
-		for (auto match = _regex.Match(str); match->Success; match = match->NextMatch())
+		for (auto match = _regex.Match(input); match->Success; match = match->NextMatch())
 			for (int i = 1; i < match->Groups->Count; ++i)
 				if (match->Groups[i]->Success)
 				{
@@ -47,9 +47,9 @@ namespace DeclParser
 						{
 							if (!stack.empty())
 							{
-								int idx = stack.top();
+								int index = stack.top();
 								stack.pop();
-								_skipIndices.Add(idx, _groups.Count);
+								_skipIndices.Add(index, _groups.Count);
 							}
 						}
 						else
@@ -74,7 +74,7 @@ namespace DeclParser
 	void Lexer::MoveNext()
 	{
 		if (!TryMoveNext())
-			throw gcnew System::FormatException("Unexpected end of file.");
+			throw gcnew FormatException("Unexpected end of file.");
 	}
 
 	void Lexer::Skip()

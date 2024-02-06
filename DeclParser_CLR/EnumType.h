@@ -6,8 +6,7 @@ namespace DeclParser
 	public ref class EnumType : NamedType
 	{
 	public:
-		using Enums = System::Collections::Generic::List<System::String^>;
-		property Enums^ Enumerators;
+		property System::Collections::Generic::IList<System::String^>^ Enumerators;
 
 		property bool Empty
 		{
@@ -23,6 +22,6 @@ namespace DeclParser
 		EnumType(System::String^ name);
 		EnumType(System::String^ name, bool complete);
 
-		int SizeOf(DataModel) override;
+		int SizeOf(DataModel dataModel) override;
 	};
 }

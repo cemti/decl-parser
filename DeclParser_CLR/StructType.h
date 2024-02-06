@@ -5,9 +5,9 @@ namespace DeclParser
 {
 	public ref class StructType : NamedType
 	{
-		const bool isUnion;
+		const bool _isUnion;
 	public:
-		property Declarations^ Members;
+		property System::Collections::Generic::IList<NamedDeclaration>^ Members;
 
 		property bool IsUnion
 		{
@@ -29,6 +29,6 @@ namespace DeclParser
 		StructType(System::String^ name, bool isUnion);
 		StructType(System::String^ name, bool isUnion, bool complete);
 
-		int SizeOf(DataModel dm) override;
+		int SizeOf(DataModel dataModel) override;
 	};
 }

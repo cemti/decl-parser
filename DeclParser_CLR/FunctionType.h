@@ -6,16 +6,16 @@ namespace DeclParser
 	public ref class FunctionType : CompositeType
 	{
 	public:
-		property Declarations^ Parameters;
+		property System::Collections::Generic::IList<NamedDeclaration>^ Parameters;
 
-		property bool HasNoParams
+		property bool HasNoParameters
 		{
 			bool get();
 		}
 
 		FunctionType();
-		FunctionType(BaseType^ decaysTo, Declarations^ params);
+		FunctionType(BaseType^ decayTo, System::Collections::Generic::IList<NamedDeclaration>^ parameters);
 
-		void SetQualifier(Qualifiers q) override;
+		void SetQualifier(Qualifiers qualifiers) override;
 	};
 }

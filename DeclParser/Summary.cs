@@ -7,38 +7,38 @@ namespace DeclParser
 
     public partial class Summary : Form
     {
-        private readonly TypeParser parser;
-        private readonly HashSet<string> readNT = new();
-        private readonly StringBuilder buffer = new();
+        private readonly TypeParser _parser;
+        private readonly HashSet<string> _nameSet = new();
+        private readonly StringBuilder _buffer = new();
 
-        public string Buffer => buffer.ToString();
+        public string Buffer => _buffer.ToString();
 
         public Summary(TypeParser parser)
         {
             InitializeComponent();
-            this.parser = parser;
+            _parser = parser;
 
-            PopulateText(parser.Variables, buffer);
+            PopulateText(parser.Variables, _buffer);
             textBox1.Text = Buffer;
 
-            foreach (var (name, decl) in parser.Variables)
+            foreach (var (name, declaration) in parser.Variables)
             {
-                if (decl == null || decl.Type == null)
+                if (declaration == null || declaration.Type == null)
                     throw new ArgumentException("Declaration is null.");
                 
-                AddNode(AddNode(treeView1.Nodes, name, new NamedDeclaration(name, decl)), decl.Type);
+                AddNode(AddNode(treeView1.Nodes, name, new NamedDeclaration(name, declaration)), declaration.Type);
             }
         }
 
         public static string Verbose(BaseType? type, TypeParser parser, bool simple = false)
         {
-            StringBuilder str = new();
+            StringBuilder name = new();
 
             while (type != null)
             {
-                foreach (var q in Enum.GetValues<Qualifiers>())
-                    if (type.Qualifier.HasFlag(q))
-                        str.Append(q == Qualifiers.@const ? "constant " : q.ToString() + " ");
+                foreach (var qualifiers in Enum.GetValues<Qualifiers>())
+                    if (type.Qualifier.HasFlag(qualifiers))
+                        name.Append(qualifiers == Qualifiers.@const ? "constant " : qualifiers.ToString() + " ");
 
                 if (type is CompositeType cType)
                 {
@@ -46,57 +46,57 @@ namespace DeclParser
 
                     if (type is PointerType pType)
                     {
-                        str.Append("pointer");
+                        name.Append("pointer");
 
                         if (simple || deadEnd)
                             break;
 
-                        str.Append(" to a ");
+                        name.Append(" to a ");
                     }
                     else if (type is ArrayType aType)
                     {
-                        str.Append("fixed array with ");
+                        name.Append("fixed array with ");
 
                         if (aType.Count.HasValue)
                         {
-                            str.Append($"{aType.Count.Value} instance");
+                            name.Append($"{aType.Count.Value} instance");
 
                             if (aType.Count.Value != 1)
-                                str.Append('s');
+                                name.Append('s');
                         }
                         else
-                            str.Append("any instances");
+                            name.Append("any instances");
 
                         if (simple || deadEnd)
                             break;
 
-                        str.Append(" of a ");
+                        name.Append(" of a ");
                     }
                     else if (type is FunctionType fType1)
                     {
-                        str.Append("function");
+                        name.Append("function");
 
                         if (simple)
                             break;
 
-                        if (fType1.HasNoParams)
-                            str.Append(" with no parameters");
+                        if (fType1.HasNoParameters)
+                            name.Append(" with no parameters");
                         else
                         {
-                            str.Append($" with {fType1.Parameters.Count} parameter");
+                            name.Append($" with {fType1.Parameters.Count} parameter");
 
                             if (fType1.Parameters.Count != 1)
-                                str.Append('s');
+                                name.Append('s');
 
-                            str.Append(" (");
-                            str.AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Decl.Type, a.Name, false)));
-                            str.Append(')');
+                            name.Append(" (");
+                            name.AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Declaration.Type, a.Name, false)));
+                            name.Append(')');
                         }
 
                         if (deadEnd)
                             break;
 
-                        str.Append(", returning a ");
+                        name.Append(", returning a ");
                     }
 
                     type = cType.Decay;
@@ -106,66 +106,66 @@ namespace DeclParser
                     if (type is FundamentalType fType)
                     {
                         if (fType.HasSign)
-                            str.Append(fType.Sign + " ");
+                            name.Append(fType.Sign + " ");
 
                         switch (fType.Type)
                         {
-                            case FundamentalType.Types.@void:
-                                str.Append("void type");
+                            case FundamentalType.DataType.@void:
+                                name.Append("void type");
                                 break;
 
-                            case FundamentalType.Types.@char:
-                                str.Append("character");
+                            case FundamentalType.DataType.@char:
+                                name.Append("character");
                                 break;
 
-                            case FundamentalType.Types.@int:
-                                str.Append("whole number");
+                            case FundamentalType.DataType.@int:
+                                name.Append("whole number");
                                 break;
 
-                            case FundamentalType.Types.@float:
-                            case FundamentalType.Types.@double:
-                                str.Append("floating point number");
+                            case FundamentalType.DataType.@float:
+                            case FundamentalType.DataType.@double:
+                                name.Append("floating point number");
                                 break;
                         }
 
-                        int sz = parser.SizeOf(type);
+                        int size = parser.SizeOf(type);
 
-                        if (sz > 0)
+                        if (size > 0)
                         {
-                            str.Append($" that occupies {sz} byte");
+                            name.Append($" that occupies {size} byte");
 
-                            if (sz != 1)
-                                str.Append('s');
+                            if (size != 1)
+                                name.Append('s');
                         }
                     }
                     else if (type is NamedType nType)
                     {
                         if (!nType.Instantiable)
-                            str.Append("incomplete ");
+                            name.Append("incomplete ");
 
                         if (type is StructType sType)
-                            str.Append(sType.IsUnion ? "union" : "structure");
+                            name.Append(sType.IsUnion ? "union" : "structure");
                         else if (type is EnumType)
-                            str.Append("enumeration");
+                            name.Append("enumeration");
 
-                        str.Append($" {(nType.Anonymous ? "that is anonymous" : $"named {nType.Name}")}");
+                        name.Append($" {(nType.Anonymous ? "that is anonymous" : $"named {nType.Name}")}");
                     }
                     else if (type is EllipsisType)
-                        str.Append("Ellipsis");
+                        name.Append("Ellipsis");
 
                     break;
                 }
             }
 
-            return str.ToString();
+            return name.ToString();
         }
 
-        private TreeNode AddNode(TreeNodeCollection parent, object? name, object tag)
+        private TreeNode AddNode(TreeNodeCollection parent, object? rawName, object tag)
         {
-            var str = name?.ToString();
-            var empty = string.IsNullOrWhiteSpace(str);
+            var name = rawName?.ToString();
+            var empty = string.IsNullOrWhiteSpace(name);
             
-            var node = parent.Add(empty ? "Unnamed" : str);
+            var node = parent.Add(empty ? "Unnamed" : name);
             node.Tag = tag;
 
             if (empty)
@@ -175,6 +175,7 @@ namespace DeclParser
         }
 
         private TreeNode AddNode(TreeNode node, object? name, object tag) => AddNode(node.Nodes, name, tag);
+
         private void AddNode(TreeNode node, object tag) => AddNode(node.Nodes, tag, tag);
 
         private void PopulateText(NamedType nType, StringBuilder sb, bool allowTypedef = false)
@@ -188,7 +189,7 @@ namespace DeclParser
 
             if (nType.Instantiable)
             {
-                readNT.Add(nType.Name);
+                _nameSet.Add(nType.Name);
                 sb.AppendLine(" {");
 
                 if (nType is StructType sType)
@@ -208,7 +209,7 @@ namespace DeclParser
                 sb.AppendLine(";");
         }
 
-        private void PopulateText(List<NamedDeclaration> list, StringBuilder sb, bool depth = false)
+        private void PopulateText(IList<NamedDeclaration> list, StringBuilder sb, bool depth = false)
         {
             void Recursive(BaseType tType)
             {
@@ -221,7 +222,7 @@ namespace DeclParser
                     tType = cType.Decay;
                 }
 
-                if (tType is NamedType nType && nType.Instantiable && !readNT.Contains(nType.Name))
+                if (tType is NamedType nType && nType.Instantiable && !_nameSet.Contains(nType.Name))
                 {
                     if (nType.HasQualifier)
                     {
@@ -237,7 +238,7 @@ namespace DeclParser
             
             foreach (var v in list)
             {
-                Recursive(v.Decl.Type);
+                Recursive(v.Declaration.Type);
 
                 if (depth)
                     sb.Append("  ");
@@ -253,11 +254,11 @@ namespace DeclParser
 
             StringBuilder sb = new();
 
-            if (e.Node.Tag is NamedDeclaration decl)
-                PopulateText(new List<NamedDeclaration> { decl }, sb);
+            if (e.Node.Tag is NamedDeclaration declaration)
+                PopulateText(new List<NamedDeclaration> { declaration }, sb);
             else if (e.Node.Tag is BaseType type)
             {
-                sb.AppendLine($"// {Verbose(type, parser)}");
+                sb.AppendLine($"// {Verbose(type, _parser)}");
 
                 if (type is NamedType nType)
                     PopulateText(nType, sb, true);
@@ -285,25 +286,25 @@ namespace DeclParser
                 node.Name = "visited";
 
                 if (node.Tag is NamedDeclaration d)
-                    AddNode(node, d.Decl.Type);
+                    AddNode(node, d.Declaration.Type);
                 else if (node.Tag is BaseType type)
                 {
                     if (type is CompositeType cType)
                     {
                         AddNode(node, cType.Decay);
 
-                        if (type is FunctionType fType && !fType.HasNoParams)
+                        if (type is FunctionType fType && !fType.HasNoParameters)
                         {
                             var pNode = node.Nodes.Add($"Parameters ({fType.Parameters.Count})");
                             pNode.Tag = fType.Parameters;
                             pNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
 
-                            foreach (var param in fType.Parameters)
+                            foreach (var parameter in fType.Parameters)
                             {
-                                if (param.Decl.Type is EllipsisType)
+                                if (parameter.Declaration.Type is EllipsisType)
                                     AddNode(pNode, "...");
                                 else
-                                    AddNode(pNode, param.Name, param);
+                                    AddNode(pNode, parameter.Name, parameter);
                             }
                         }
                     }
@@ -323,16 +324,16 @@ namespace DeclParser
                         foreach (var name in eType.Enumerators)
                             AddNode(node, name);
 
-                    int sz = parser.SizeOf(type);
+                    int size = _parser.SizeOf(type);
 
-                    if (sz > 0)
+                    if (size > 0)
                     {
-                        var str = $"Size: {sz} byte";
+                        var sizeInfo = $"Size: {size} byte";
 
-                        if (sz != 1)
-                            str += 's';
+                        if (size != 1)
+                            sizeInfo += 's';
 
-                        AddNode(node, str, sz).NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+                        AddNode(node, sizeInfo, size).NodeFont = new Font(treeView1.Font, FontStyle.Bold);
                     }
                 }
             }

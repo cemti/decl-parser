@@ -9,35 +9,35 @@ namespace DeclParser
 		System::Collections::Generic::Dictionary<System::String^, int> enums;
 		System::Collections::Generic::List<System::String^> frame;
 
-		Lexer lexer;
-		const BaseType::DataModel dataModel;
-		const bool permissive; // allows ignoring other C statements
+		Lexer _lexer;
+		const BaseType::DataModel _dataModel;
+		const bool _permissive; // allows ignoring other C statements
 
 		void GreedySkipTokens();
 
 		void Parse();
-		Declaration^ ParseInitialType(bool allowDef);
-		NamedDeclaration ParsePostType(Declaration^ decl);
-		Declarations^ ParseParameters();
-		NamedType^ ParseNamedType(bool allowDef);
-		StructType^ ParseStruct(bool isUnion, bool allowDef);
-		EnumType^ ParseEnum(bool allowDef);
+		Declaration^ ParseInitialType(bool allowDefinition);
+		NamedDeclaration ParsePostType(Declaration^ declaration);
+		System::Collections::Generic::IList<NamedDeclaration>^ ParseParameters();
+		NamedType^ ParseNamedType(bool allowDefinition);
+		StructType^ ParseStruct(bool isUnion, bool allowDefinition);
+		EnumType^ ParseEnum(bool allowDefinition);
 
 		Declaration^ LookupTypedef(System::String^ name);
 	public:
-		property DeclaredNamedTypes^ DeclaredNamedTypes;
+		property System::Collections::Generic::IDictionary<System::String^, NamedType^>^ DeclaredTypes;
 
-		property array<Declarations^>^ DeclArray;
+		property array<System::Collections::Generic::IList<NamedDeclaration>^>^ DeclArray;
 
-		property Declarations^ Variables
+		property System::Collections::Generic::IList<NamedDeclaration>^ Variables
 		{
-			Declarations^ get();
+			System::Collections::Generic::IList<NamedDeclaration>^ get();
 		}
 
 		int SizeOf(BaseType^);
 
-		TypeParser(BaseType::DataModel dm) : dataModel(dm), permissive() { }
-		TypeParser(System::String^ str, BaseType::DataModel dm) : TypeParser(str, dm, false) { }
+		TypeParser(BaseType::DataModel dataModel) : _dataModel(dataModel), _permissive() { }
+		TypeParser(System::String^ input, BaseType::DataModel dataModel) : TypeParser(input, dataModel, false) { }
 		TypeParser(System::String^, BaseType::DataModel, bool);
 	};
 }

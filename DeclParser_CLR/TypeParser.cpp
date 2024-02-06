@@ -6,31 +6,31 @@ using namespace Linq;
 
 namespace DeclParser
 {
-	Declarations^ TypeParser::Variables::get()
+	IList<NamedDeclaration>^ TypeParser::Variables::get()
 	{
 		return DeclArray[0];
 	}
 	
-	TypeParser::TypeParser(String^ str, BaseType::DataModel dm, bool permissive) : lexer(str), permissive(permissive), dataModel(dm)
+	TypeParser::TypeParser(String^ input, BaseType::DataModel dataModel, bool permissive) : _lexer(input), _permissive(permissive), _dataModel(dataModel)
 	{
-		FundamentalType::Lengths length{ };
+		FundamentalType::TypeLength length{ };
 
-		if (dm >= BaseType::DataModel::LLP64)
-			length = FundamentalType::Lengths::LongLong;
+		if (dataModel >= BaseType::DataModel::LLP64)
+			length = FundamentalType::TypeLength::LongLong;
 		
-		DeclArray = gcnew array<Declarations^> { gcnew Declarations, gcnew Declarations };
-		DeclaredNamedTypes = gcnew DeclParser::DeclaredNamedTypes;
+		DeclArray = gcnew array<List<NamedDeclaration>^> { gcnew List<NamedDeclaration>, gcnew List<NamedDeclaration> };
+		DeclaredTypes = gcnew Dictionary<String^, NamedType^>;
 		
 		try
 		{
 			Parse();
 		}
-		catch (Exception^ ex)
+		catch (Exception^ e)
 		{
-			if (!lexer.HasNext && (ex->GetType() == FormatException::typeid || ex->GetType() == ArgumentException::typeid))
+			if (!_lexer.HasNext && (e->GetType() == FormatException::typeid || e->GetType() == ArgumentException::typeid))
 			{
-				auto match = lexer.CurrentMatch;
-				throw gcnew FormatException("At position " + match->Index + L" (length " + match->Length + "): " + ex->Message);
+				auto match = _lexer.CurrentMatch;
+				throw gcnew FormatException(String::Format("At position {0} (length {1}): {2}", match->Index, match->Length, e->Message));
 			}
 
 			throw;
@@ -41,14 +41,14 @@ namespace DeclParser
 	{
 		for (; ; )
 		{
-			lexer.MoveNext();
+			_lexer.MoveNext();
 
-			if (lexer.Value == ":")
+			if (_lexer.Value == ":")
 				return;
 
-			if (lexer.Value == ";" || lexer.Value == "{" || lexer.Value == "}" || lexer.Value == ")")
+			if (_lexer.Value == ";" || _lexer.Value == "{" || _lexer.Value == "}" || _lexer.Value == ")")
 			{
-				--lexer.Index;
+				--_lexer.Index;
 				return;
 			}
 		}
@@ -56,17 +56,17 @@ namespace DeclParser
 
 	int TypeParser::SizeOf(BaseType^ type)
 	{
-		return type->SizeOf(dataModel);
+		return type->SizeOf(_dataModel);
 	}
 
 	void TypeParser::Parse()
 	{
 		int declIndex{ };
-		bool insideLoop{ }, insideFor{ };
+		bool insideLoop{ }, insideForLoop{ };
 
 		for (; ; )
 		{
-			if (lexer.TryMoveNext(); lexer.HasNext)
+			if (_lexer.TryMoveNext(); _lexer.HasNext)
 			{
 				if (frame.Count == 0)
 					return;
@@ -74,21 +74,21 @@ namespace DeclParser
 				throw gcnew FormatException("Unexpected end of file while parsing the body of scope '" + frame[frame.Count - 1] + "'.");
 			}
 
-			switch (auto group = lexer.Group)
+			switch (auto group = _lexer.Group)
 			{
 			case Lexer::RegexGroups::Name:
-				if (permissive && LookupTypedef(lexer.Value) == nullptr)
+				if (_permissive && LookupTypedef(_lexer.Value) == nullptr)
 				{
-					bool isDo = lexer.Value == "do";
-					insideFor = lexer.Value == "for";
+					bool insideDoLoop = _lexer.Value == "do";
+					insideForLoop = _lexer.Value == "for";
 					
-					if (isDo || insideFor || lexer.Value == "while" || lexer.Value == "switch")
+					if (insideDoLoop || insideForLoop || _lexer.Value == "while" || _lexer.Value == "switch")
 					{
 						insideLoop = true;
-						frame.Add(String::Format("{0}_{1}", lexer.Value, lexer.TextIndex));
+						frame.Add(String::Format("{0}_{1}", _lexer.Value, _lexer.TextIndex));
 
-						if (!isDo)
-							lexer.MoveNext();
+						if (!insideDoLoop)
+							_lexer.MoveNext();
 					}
 					else
 						GreedySkipTokens();
@@ -102,82 +102,82 @@ namespace DeclParser
 			case Lexer::RegexGroups::SType:
 			case Lexer::RegexGroups::Qualifier:
 			case Lexer::RegexGroups::Specifier:
-			decl:
-				for (auto initial = ParseInitialType(true); ; )
+			declaration:
+				for (auto initialType = ParseInitialType(true); ; )
 				{
-					auto initDecl = gcnew Declaration(initial);
-					auto post = ParsePostType(initDecl);
-					FunctionType^ fType{ };
-					bool fnDef = false;
+					FunctionType^ functionType{ };
+					auto initialDecl = gcnew Declaration(initialType);
+					auto postType = ParsePostType(initialDecl);
+					bool isFnDefinition = false;
 
 					switch (declIndex)
 					{
 					case 0:
-						if (fType = dynamic_cast<FunctionType^>(post.Decl->Type))
+						if (functionType = dynamic_cast<FunctionType^>(postType.Declaration->Type))
 						{
-							if (fType->HasNoParams)
+							if (functionType->HasNoParameters)
 								break;
 
-							for each (auto d in fType->Parameters)
-								if (d.Name == nullptr && dynamic_cast<EllipsisType^>(d.Decl->Type) == nullptr)
+							for each (auto parameter in functionType->Parameters)
+								if (parameter.Name == nullptr && dynamic_cast<EllipsisType^>(parameter.Declaration->Type) == nullptr)
 									throw gcnew FormatException("Parameter name omitted.");
 						}
 						else
 						{
-							if (post.Decl->Inline)
+							if (postType.Declaration->Inline)
 								throw gcnew FormatException("Only functions can be inline.");
 
-							if (auto nType = dynamic_cast<NamedType^>(post.Decl->Type); nType && (!nType->Instantiable || nType->Empty))
+							if (auto nType = dynamic_cast<NamedType^>(postType.Declaration->Type); nType && (!nType->Instantiable || nType->Empty))
 								throw gcnew FormatException("Incomplete type.");
 						}
 						
 						break;
 
 					case 1:
-						if (post.Decl->HasSpecifier || post.Decl->Inline)
+						if (postType.Declaration->HasSpecifier || postType.Declaration->Inline)
 							throw gcnew FormatException("Storage qualifiers are not allowed in a typedef declaration.");
 					}
 
-					if (post.Name == nullptr)
+					if (postType.Name == nullptr)
 					{
-						if (lexer.Value != ";")
+						if (_lexer.Value != ";")
 							throw gcnew FormatException("Variable name omitted.");
 
 						if (group != Lexer::RegexGroups::SType)
-							goto nextVar;
+							goto nextVariable;
 
-						if (auto sType = dynamic_cast<StructType^>(post.Decl->Type); sType == nullptr || !sType->Anonymous)
-							goto nextVar;
+						if (auto sType = dynamic_cast<StructType^>(postType.Declaration->Type); sType == nullptr || !sType->Anonymous)
+							goto nextVariable;
 
-						post.Name = "__decl_" + lexer.TextIndex;
+						postType.Name = "__decl_" + _lexer.TextIndex;
 					}
 
-					fnDef = declIndex == 0 && fType && lexer.Value == "{";
-					post.Name = String::Join("__", Enumerable::Append(%frame, post.Name));
+					isFnDefinition = declIndex == 0 && functionType && _lexer.Value == "{";
+					postType.Name = String::Join("__", Enumerable::Append(%frame, postType.Name));
 
-					for each (auto d in DeclArray[declIndex])
-						if (d.Name && d.Name == post.Name)
+					for each (auto declaration in DeclArray[declIndex])
+						if (declaration.Name && declaration.Name == postType.Name)
 						{
-							if (fnDef && d.Decl->Type->ToString() == post.Decl->Type->ToString())
+							if (isFnDefinition && declaration.Declaration->Type->ToString() == postType.Declaration->Type->ToString())
 							{
-								post = d;
-								frame.Add(post.Name + "_" + lexer.TextIndex);
+								postType = declaration;
+								frame.Add(postType.Name + "_" + _lexer.TextIndex);
 								break;
 							}
 
-							throw gcnew ArgumentException("Duplicate variable '" + d.Name + "'.");
+							throw gcnew ArgumentException("Duplicate variable '" + declaration.Name + "'.");
 						}
 
-					DeclArray[declIndex]->Add(post);
+					DeclArray[declIndex]->Add(postType);
 
-				nextVar:
-					if (lexer.Value != ",")
+				nextVariable:
+					if (_lexer.Value != ",")
 					{
-						if (fnDef)
-							frame.Add(post.Name + "_" + lexer.TextIndex);
+						if (isFnDefinition)
+							frame.Add(postType.Name + "_" + _lexer.TextIndex);
 						else
 						{
-							if (lexer.Value != ";")
+							if (_lexer.Value != ";")
 								goto unexpectedToken;
 
 							declIndex = 0;
@@ -186,28 +186,28 @@ namespace DeclParser
 						break;
 					}
 
-					lexer.MoveNext();
+					_lexer.MoveNext();
 				}
 
 				break;
 
 			default:
 			unexpectedToken:
-				if (!permissive)
-					throw gcnew FormatException("Unexpected token '" + lexer.Value + "'.");
+				if (!_permissive)
+					throw gcnew FormatException("Unexpected token '" + _lexer.Value + "'.");
 
-				if (insideLoop && lexer.Value == ")")
+				if (insideLoop && _lexer.Value == ")")
 				{
-					insideFor = false;
-					lexer.MoveNext();
+					insideForLoop = false;
+					_lexer.MoveNext();
 
-					if (lexer.Value == ";")
+					if (_lexer.Value == ";")
 					{
 						insideLoop = false;
 						frame.RemoveAt(frame.Count - 1);
 					}
 					else
-						--lexer.Index;
+						--_lexer.Index;
 				}
 					
 				GreedySkipTokens();
@@ -217,32 +217,32 @@ namespace DeclParser
 				if (frame.Count == 0)
 					throw gcnew FormatException("Scope braces are not expected in root scope.");
 
-				if (lexer.Value == "{")
+				if (_lexer.Value == "{")
 				{
-					if (insideLoop && !insideFor)
+					if (insideLoop && !insideForLoop)
 						insideLoop = false;
 					else
-						frame.Add("scope_" + lexer.TextIndex);
+						frame.Add("scope_" + _lexer.TextIndex);
 				}
-				else if (lexer.Value == "}")
+				else if (_lexer.Value == "}")
 					frame.RemoveAt(frame.Count - 1);
 
 				break;
 
 			case Lexer::RegexGroups::Special:
-				if (lexer.Value != ";")
+				if (_lexer.Value != ";")
 				{
-					if (lexer.Value != "typedef")
+					if (_lexer.Value != "typedef")
 					{
-						if (lexer.Value != "inline")
+						if (_lexer.Value != "inline")
 							goto unexpectedToken;
 						
-						goto decl;
+						goto declaration;
 					}
 
 					declIndex = 1;
 				}
-				else if (permissive && !insideFor && insideLoop && lexer.Value == ";")
+				else if (_permissive && !insideForLoop && insideLoop && _lexer.Value == ";")
 				{
 					insideLoop = false;
 					frame.RemoveAt(frame.Count - 1);
@@ -251,65 +251,65 @@ namespace DeclParser
 		}
 	}
 
-	Declaration^ TypeParser::ParseInitialType(bool allowDef)
+	Declaration^ TypeParser::ParseInitialType(bool allowDefinition)
 	{
-		FundamentalType::Lengths lengths{ };
-		FundamentalType::Signs signs{ };
+		FundamentalType::TypeLength length{ };
+		FundamentalType::TypeSign sign{ };
 		BaseType::Qualifiers qualifiers{ };
-		Declaration::StorageSpecifiers specifiers{ };
+		Declaration::StorageSpecifier specifiers{ };
 		BaseType^ type{ };
-		bool sealedType{ }, isInline{ };
+		bool isSealed{ }, isInline{ };
 
-		for (; ; lexer.MoveNext())
+		for (; ; _lexer.MoveNext())
 		{
-			switch (lexer.Group)
+			switch (_lexer.Group)
 			{
 			case Lexer::RegexGroups::SType:
 				if (type)
 					throw gcnew FormatException("Type already specified.");
 
-				type = ParseNamedType(allowDef);
-				sealedType = true;
+				type = ParseNamedType(allowDefinition);
+				isSealed = true;
 				break;
 
 			case Lexer::RegexGroups::Type:
 				if (type)
 					throw gcnew FormatException("Type already specified.");
 
-				type = gcnew FundamentalType(Enum::Parse<FundamentalType::Types>(lexer.Value));
+				type = gcnew FundamentalType(Enum::Parse<FundamentalType::DataType>(_lexer.Value));
 				break;
 
 			case Lexer::RegexGroups::Length:
 			{
-				auto flag = Enum::Parse<FundamentalType::Lengths>(lexer.Value);
+				auto newLength = Enum::Parse<FundamentalType::TypeLength>(_lexer.Value);
 
-				if (bool(lengths))
+				if (bool(length))
 				{
-					if (flag != FundamentalType::Lengths::__identifier(long) || flag != lengths)
+					if (newLength != FundamentalType::TypeLength::__identifier(long) || newLength != length)
 						throw gcnew FormatException("More than sufficient length specifiers.");
 
-					lengths = FundamentalType::Lengths::LongLong;
+					length = FundamentalType::TypeLength::LongLong;
 				}
 				else
-					lengths = flag;
+					length = newLength;
 
 				break;
 			}
 
 			case Lexer::RegexGroups::Sign:
-				if (bool(signs))
+				if (bool(sign))
 					throw gcnew FormatException("Duplicate sign specifier.");
 
-				signs = Enum::Parse<FundamentalType::Signs>(lexer.Value);
+				sign = Enum::Parse<FundamentalType::TypeSign>(_lexer.Value);
 				break;
 
 			case Lexer::RegexGroups::Qualifier:
-				qualifiers = qualifiers | Enum::Parse<BaseType::Qualifiers>(lexer.Value);
+				qualifiers = qualifiers | Enum::Parse<BaseType::Qualifiers>(_lexer.Value);
 				break;
 
 			case Lexer::RegexGroups::Specifier:
 			{
-				auto flag = Enum::Parse<Declaration::StorageSpecifiers>(lexer.Value);
+				auto flag = Enum::Parse<Declaration::StorageSpecifier>(_lexer.Value);
 
 				if (flag == specifiers)
 					throw gcnew FormatException("Duplicate '" + flag.ToString() + "'.");
@@ -319,38 +319,38 @@ namespace DeclParser
 			}
 
 			case Lexer::RegexGroups::Name:
-				if (auto tType = LookupTypedef(lexer.Value); tType && type == nullptr)
+				if (auto typeDef = LookupTypedef(_lexer.Value); typeDef && type == nullptr)
 				{
-					type = tType->Type;
-					sealedType = true;
+					type = typeDef->Type;
+					isSealed = true;
 					break;
 				}
 
 			default:
-				if (lexer.Value == "inline")
+				if (_lexer.Value == "inline")
 				{
 					isInline = true;
 					break;
 				}
 
-				if (auto hasLS = bool(lengths) || bool(signs); type == nullptr)
+				if (auto hasLS = bool(length) || bool(sign); type == nullptr)
 				{
 					if (!hasLS)
 						throw gcnew FormatException("No type specified.");
 
-					type = gcnew FundamentalType(FundamentalType::Types::__identifier(int), signs, lengths);
+					type = gcnew FundamentalType(FundamentalType::DataType::__identifier(int), sign, length);
 				}
-				else if (auto fType = dynamic_cast<FundamentalType^>(type); fType && !sealedType)
+				else if (auto fType = dynamic_cast<FundamentalType^>(type); fType && !isSealed)
 				{
-					fType->Length = lengths;
-					fType->Sign = signs;
+					fType->Length = length;
+					fType->Sign = sign;
 				}
 				else if (hasLS)
 					throw gcnew FormatException("Length and sign qualifiers can be applied to fundamental types only.");
 
 				if (bool(qualifiers))
 				{
-					if (sealedType)
+					if (isSealed)
 						type = static_cast<BaseType^>(type->Clone());
 
 					type->SetQualifier(qualifiers);
@@ -361,79 +361,79 @@ namespace DeclParser
 		}
 	}
 
-	NamedDeclaration TypeParser::ParsePostType(Declaration^ decl)
+	NamedDeclaration TypeParser::ParsePostType(Declaration^ declaration)
 	{
 		Stack<Lexer::RegexGroups> groups;
 		Stack<Nullable<int>> counts;
 		String^ name{ };
 		
-		for (int endIdx = -1, nextIdx = -1; ; lexer.MoveNext())
+		for (int endIndex = -1, nextIndex = -1; ; _lexer.MoveNext())
 		{
-			switch (lexer.Group)
+			switch (_lexer.Group)
 			{
 			case Lexer::RegexGroups::Name:
 				if (name || groups.Count > 0)
 					throw gcnew FormatException("Invalid declaration.");
 
-				name = lexer.Value;
+				name = _lexer.Value;
 				continue;
 
 			case Lexer::RegexGroups::Qualifier:
 				if (name || groups.Count > 0)
 					throw gcnew FormatException("Invalid declaration.");
 
-				decl->Type->SetQualifier(Enum::Parse<FundamentalType::Qualifiers>(lexer.Value));
+				declaration->Type->SetQualifier(Enum::Parse<FundamentalType::Qualifiers>(_lexer.Value));
 				continue;
 
 			case Lexer::RegexGroups::ArrayBrace:
 			{
-				if (lexer.Value != "[")
+				if (_lexer.Value != "[")
 					throw gcnew FormatException("'[' expected.");
 
-				auto group = lexer.Group;
+				auto group = _lexer.Group;
 
-				if (lexer.MoveNext(); lexer.Group == Lexer::RegexGroups::Integer)
+				if (_lexer.MoveNext(); _lexer.Group == Lexer::RegexGroups::Integer)
 				{
-					counts.Push(int::Parse(lexer.Value));
-					lexer.MoveNext();
+					counts.Push(int::Parse(_lexer.Value));
+					_lexer.MoveNext();
 				}
 				else
 					counts.Push({ });
 
 				groups.Push(group);
 
-				if (lexer.Value != "]")
+				if (_lexer.Value != "]")
 					throw gcnew FormatException("']' expected.");
 
 				continue;
 			}
 
 			case Lexer::RegexGroups::Brace:
-				if (lexer.Value == ")")
+				if (_lexer.Value == ")")
 				{
-					if (endIdx == -1)
-						endIdx = lexer.Index;
+					if (endIndex == -1)
+						endIndex = _lexer.Index;
 					
 					break;
 				}
 
-				lexer.MoveNext();
+				_lexer.MoveNext();
 
-				if (lexer.Group < Lexer::RegexGroups::Brace || lexer.Value == ")" ||
-					(lexer.Group == Lexer::RegexGroups::Name && LookupTypedef(lexer.Value) != nullptr))
+				if (_lexer.Group < Lexer::RegexGroups::Brace || _lexer.Value == ")" ||
+					(_lexer.Group == Lexer::RegexGroups::Name && LookupTypedef(_lexer.Value) != nullptr))
 				{
-					counts.Push(lexer.Index--);
-					groups.Push(lexer.Group);
+					counts.Push(_lexer.Index--);
+					groups.Push(_lexer.Group);
 				}
 				else
 				{
-					if (name || nextIdx != -1)
+					if (name || nextIndex != -1)
 						throw gcnew FormatException("Invalid declaration");
 
-					nextIdx = --lexer.Index;
+					nextIndex = --_lexer.Index;
 				}
 
-				lexer.Skip();
+				_lexer.Skip();
 				continue;
 
 			case Lexer::RegexGroups::SType:
@@ -446,20 +446,20 @@ namespace DeclParser
 				throw gcnew FormatException("Type length/sign/storage qualifiers not expected here.");
 
 			case Lexer::RegexGroups::Special:
-				if (lexer.Value == "*")
+				if (_lexer.Value == "*")
 				{
 					if (name || groups.Count > 0)
 						throw gcnew FormatException("Invalid declaration.");
 
-					decl->Type = gcnew PointerType(decl->Type);
+					declaration->Type = gcnew PointerType(declaration->Type);
 					continue;
 				}
 
 			default:
-				if (endIdx != -1)
+				if (endIndex != -1)
 					throw gcnew FormatException("Invalid declaration");
 			
-				endIdx = lexer.Index;
+				endIndex = _lexer.Index;
 			}
 
 			while (groups.Count > 0)
@@ -468,24 +468,24 @@ namespace DeclParser
 				{
 				case Lexer::RegexGroups::ArrayBrace:
 				{
-					if (dynamic_cast<FunctionType^>(decl->Type))
+					if (dynamic_cast<FunctionType^>(declaration->Type))
 						throw gcnew FormatException("An array can't hold functions.");
 
-					auto arr = gcnew ArrayType(decl->Type);
-					arr->Count = counts.Pop();
-					decl->Type = arr;
+					auto arrayType = gcnew ArrayType(declaration->Type);
+					arrayType->Count = counts.Pop();
+					declaration->Type = arrayType;
 					break;
 				}
 
 				case Lexer::RegexGroups::Brace:
 				{
-					if (dynamic_cast<FunctionType^>(decl->Type) || dynamic_cast<ArrayType^>(decl->Type))
+					if (dynamic_cast<FunctionType^>(declaration->Type) || dynamic_cast<ArrayType^>(declaration->Type))
 						throw gcnew FormatException("Can't return functions or arrays.");
 
-					int bakIdx = lexer.Index;
-					lexer.Index = counts.Pop().Value;
-					decl->Type = gcnew FunctionType(decl->Type, ParseParameters());
-					lexer.Index = bakIdx;
+					int previousIndex = _lexer.Index;
+					_lexer.Index = counts.Pop().Value;
+					declaration->Type = gcnew FunctionType(declaration->Type, ParseParameters());
+					_lexer.Index = previousIndex;
 					break;
 				}
 
@@ -494,42 +494,42 @@ namespace DeclParser
 				}
 			}
 
-			if (nextIdx == -1)
+			if (nextIndex == -1)
 			{
-				lexer.Index = endIdx;
+				_lexer.Index = endIndex;
 				break;
 			}
 
-			lexer.Index = nextIdx;
-			nextIdx = -1;
+			_lexer.Index = nextIndex;
+			nextIndex = -1;
 		}
 
-		if (dynamic_cast<PointerType^>(decl->Type) == nullptr && decl->Type->Qualifier == BaseType::Qualifiers::__identifier(restrict))
+		if (dynamic_cast<PointerType^>(declaration->Type) == nullptr && declaration->Type->Qualifier == BaseType::Qualifiers::__identifier(restrict))
 			throw gcnew FormatException("Only pointers can have 'restrict' qualifier.");
 
-		if (dynamic_cast<FunctionType^>(decl->Type))
+		if (dynamic_cast<FunctionType^>(declaration->Type))
 		{
-			if (decl->Specifier == Declaration::StorageSpecifiers::__identifier(auto))
+			if (declaration->Specifier == Declaration::StorageSpecifier::__identifier(auto))
 				throw gcnew FormatException("Functions can't have 'auto' storage qualifier.");
 			
-			if (decl->Specifier == Declaration::StorageSpecifiers::__identifier(extern))
-				decl->Specifier = Declaration::StorageSpecifiers();
+			if (declaration->Specifier == Declaration::StorageSpecifier::__identifier(extern))
+				declaration->Specifier = Declaration::StorageSpecifier();
 		}
 
 		if (name)
-			if (auto fType = dynamic_cast<FundamentalType^>(decl->Type); fType && fType->Type == FundamentalType::Types::__identifier(void))
+			if (auto fType = dynamic_cast<FundamentalType^>(declaration->Type); fType && fType->Type == FundamentalType::DataType::__identifier(void))
 				throw gcnew FormatException("Invalid declaration.");
 
-		return NamedDeclaration(name, decl);
+		return NamedDeclaration(name, declaration);
 	}
 
-	Declarations^ TypeParser::ParseParameters()
+	IList<NamedDeclaration>^ TypeParser::ParseParameters()
 	{
-		auto decls = gcnew Declarations;
+		auto declarations = gcnew List<NamedDeclaration>;
 
 		for (; ; )
 		{
-			switch (lexer.Group)
+			switch (_lexer.Group)
 			{
 			case Lexer::RegexGroups::Ellipsis:
 			case Lexer::RegexGroups::Name:
@@ -541,47 +541,47 @@ namespace DeclParser
 			case Lexer::RegexGroups::Specifier:
 				for (; ; )
 				{
-					if (lexer.Group == Lexer::RegexGroups::Ellipsis)
+					if (_lexer.Group == Lexer::RegexGroups::Ellipsis)
 					{
-						if (decls->Count == 0)
+						if (declarations->Count == 0)
 							throw gcnew FormatException("'...' can't be the first parameter.");
 						
-						decls->Add(NamedDeclaration(nullptr, gcnew Declaration(gcnew EllipsisType, Declaration::StorageSpecifiers())));
-						lexer.MoveNext();
+						declarations->Add(NamedDeclaration(nullptr, gcnew Declaration(gcnew EllipsisType, Declaration::StorageSpecifier())));
+						_lexer.MoveNext();
 						break;
 					}
 					
-					auto initial = ParseInitialType(false);
+					auto initialType = ParseInitialType(false);
 
-					if (bool(initial->Specifier))
+					if (bool(initialType->Specifier))
 						throw gcnew FormatException("Function parameters can't have storage qualifiers.");
 
-					auto post = ParsePostType(initial);
+					auto postType = ParsePostType(initialType);
 
-					if (auto nType = dynamic_cast<NamedType^>(post.Decl->Type); nType && !nType->Instantiable)
+					if (auto nType = dynamic_cast<NamedType^>(postType.Declaration->Type); nType && !nType->Instantiable)
 						throw gcnew FormatException("Incomplete type.");
 
-					if (auto aType = dynamic_cast<ArrayType^>(post.Decl->Type))
-						post.Decl->Type = gcnew PointerType(aType->Decay);
+					if (auto aType = dynamic_cast<ArrayType^>(postType.Declaration->Type))
+						postType.Declaration->Type = gcnew PointerType(aType->Decay);
 
-					for each (auto d in decls)
-						if (d.Name && d.Name == post.Name)
+					for each (auto d in declarations)
+						if (d.Name && d.Name == postType.Name)
 							throw gcnew ArgumentException("Duplicate variable '" + d.Name + "'.");
 
-					decls->Add(post);
+					declarations->Add(postType);
 
-					if (lexer.Value != ",")
+					if (_lexer.Value != ",")
 						break;
 
-					if (auto fType = dynamic_cast<FundamentalType^>(post.Decl->Type); fType && fType->Type == FundamentalType::Types::__identifier(void))
+					if (auto fundamentalType = dynamic_cast<FundamentalType^>(postType.Declaration->Type); fundamentalType && fundamentalType->Type == FundamentalType::DataType::__identifier(void))
 						break;
 
-					lexer.MoveNext();
+					_lexer.MoveNext();
 				}
 
 			case Lexer::RegexGroups::Brace:
-				if (lexer.Value == ")")
-					return decls;
+				if (_lexer.Value == ")")
+					return declarations;
 
 			default:
 				throw gcnew FormatException("Unexpected token");
@@ -589,73 +589,73 @@ namespace DeclParser
 		}
 	}
 
-	NamedType^ TypeParser::ParseNamedType(bool allowDef)
+	NamedType^ TypeParser::ParseNamedType(bool allowDefinition)
 	{
-		if (lexer.Value == "struct")
-			return ParseStruct(false, allowDef);
+		if (_lexer.Value == "struct")
+			return ParseStruct(false, allowDefinition);
 		
-		if (lexer.Value == "union")
-			return ParseStruct(true, allowDef);
+		if (_lexer.Value == "union")
+			return ParseStruct(true, allowDefinition);
 		
-		if (lexer.Value == "enum")
-			return ParseEnum(allowDef);
+		if (_lexer.Value == "enum")
+			return ParseEnum(allowDefinition);
 
 		throw gcnew NotImplementedException;
 	}
 
-	StructType^ TypeParser::ParseStruct(bool isUnion, bool allowDef)
+	StructType^ TypeParser::ParseStruct(bool isUnion, bool allowDefinition)
 	{
-		StructType^ st{ };
+		StructType^ structType{ };
 
 		{
 			String^ name{ };
 			
-			if (lexer.MoveNext(); lexer.Group == Lexer::RegexGroups::Name)
-				name = lexer.Value;
+			if (_lexer.MoveNext(); _lexer.Group == Lexer::RegexGroups::Name)
+				name = _lexer.Value;
 
-			if (name && DeclaredNamedTypes->ContainsKey(name))
+			if (name && DeclaredTypes->ContainsKey(name))
 			{
-				if (st = dynamic_cast<StructType^>(DeclaredNamedTypes[name]); st == nullptr || st->IsUnion != isUnion)
+				if (structType = dynamic_cast<StructType^>(DeclaredTypes[name]); structType == nullptr || structType->IsUnion != isUnion)
 					throw gcnew FormatException("Attempt to redeclare type '" + name + "'.");
 
-				if (st->Defined)
-					return st;
+				if (structType->Defined)
+					return structType;
 
-				lexer.MoveNext();
+				_lexer.MoveNext();
 			}
 			else
 			{
-				if (st = gcnew StructType(name, isUnion); st->Anonymous)
-					name = "__custom_" + lexer.TextIndex;
+				if (structType = gcnew StructType(name, isUnion); structType->Anonymous)
+					name = "__custom_" + _lexer.TextIndex;
 				else
 				{
-					DeclaredNamedTypes[name] = st;
-					lexer.MoveNext();
+					DeclaredTypes[name] = structType;
+					_lexer.MoveNext();
 				}
 
-				st->Name = String::Join("__", Enumerable::Append(%frame, name));
+				structType->Name = String::Join("__", Enumerable::Append(%frame, name));
 			}
 		}
 
-		if (lexer.Value != "{")
+		if (_lexer.Value != "{")
 		{
-			if (st->Anonymous)
+			if (structType->Anonymous)
 				throw gcnew FormatException("Anonymous structure has to be defined.");
 
-			--lexer.Index;
-			return st;
+			--_lexer.Index;
+			return structType;
 		}
 
-		if (!allowDef)
+		if (!allowDefinition)
 			throw gcnew FormatException("Structure definition not allowed here.");
 
-		st->Define();
+		structType->Define();
 
-		for (bool fam{ }; ; )
+		for (bool flexibleArrayMember{ }; ; )
 		{
-			lexer.MoveNext();
+			_lexer.MoveNext();
 
-			switch (auto group = lexer.Group)
+			switch (auto group = _lexer.Group)
 			{
 			case Lexer::RegexGroups::Name:
 			case Lexer::RegexGroups::Sign:
@@ -665,61 +665,61 @@ namespace DeclParser
 			case Lexer::RegexGroups::Qualifier:
 			case Lexer::RegexGroups::Specifier:
 			{
-				auto initial = ParseInitialType(true);
+				auto initialType = ParseInitialType(true);
 
-				if (bool(initial->Specifier))
+				if (bool(initialType->Specifier))
 					throw gcnew FormatException("Members can't have storage qualifiers.");
 
 				for (; ; )
 				{
-					auto post = ParsePostType(gcnew Declaration(initial));
+					auto postType = ParsePostType(gcnew Declaration(initialType));
 
-					if (SizeOf(post.Decl->Type) == 0)
+					if (SizeOf(postType.Declaration->Type) == 0)
 					{
-						if (fam || dynamic_cast<ArrayType^>(post.Decl) == nullptr || st->Members->Count == 0)
+						if (flexibleArrayMember || dynamic_cast<ArrayType^>(postType.Declaration) == nullptr || structType->Members->Count == 0)
 							throw gcnew FormatException("A type with an unspecified length is not allowed here.");
 
-						fam = true;
+						flexibleArrayMember = true;
 					}
 
-					if (post.Name == nullptr)
+					if (postType.Name == nullptr)
 					{
-						if (lexer.Value != ";")
+						if (_lexer.Value != ";")
 							throw gcnew FormatException("Variable name omitted.");
 						
 						if (group != Lexer::RegexGroups::SType)
 							goto nextVar;
 
-						auto sType = dynamic_cast<StructType^>(post.Decl->Type);
+						auto tempStructType = dynamic_cast<StructType^>(postType.Declaration->Type);
 
-						if (sType == nullptr || !sType->Anonymous)
+						if (tempStructType == nullptr || !tempStructType->Anonymous)
 							goto nextVar;
 
-						post.Name = "__decl_" + lexer.TextIndex;
+						postType.Name = "__decl_" + _lexer.TextIndex;
 					}
 
-					for each (auto d in st->Members)
-						if (d.Name && d.Name == post.Name)
-							throw gcnew ArgumentException("Duplicate variable '" + d.Name + "'.");
+					for each (auto member in structType->Members)
+						if (member.Name && member.Name == postType.Name)
+							throw gcnew ArgumentException("Duplicate variable '" + member.Name + "'.");
 
-					st->Members->Add(post);
+					structType->Members->Add(postType);
 
 				nextVar:
-					if (lexer.Value != ",")
+					if (_lexer.Value != ",")
 						break;
 
-					lexer.MoveNext();
+					_lexer.MoveNext();
 				}
 			}
 
 			default:
-				if (lexer.Value == ";")
+				if (_lexer.Value == ";")
 					break;
 
-				if (lexer.Value == "}")
+				if (_lexer.Value == "}")
 				{
-					st->Define();
-					return st;
+					structType->Define();
+					return structType;
 				}
 
 				throw gcnew FormatException("Unexpected token");
@@ -727,85 +727,85 @@ namespace DeclParser
 		}
 	}
 
-	EnumType^ TypeParser::ParseEnum(bool allowDef)
+	EnumType^ TypeParser::ParseEnum(bool allowDefinition)
 	{
-		EnumType^ st{ };
+		EnumType^ enumType{ };
 
 		{
 			String^ name{ };
 
-			if (lexer.MoveNext(); lexer.Group == Lexer::RegexGroups::Name)
-				name = lexer.Value;
+			if (_lexer.MoveNext(); _lexer.Group == Lexer::RegexGroups::Name)
+				name = _lexer.Value;
 
-			if (name && DeclaredNamedTypes->ContainsKey(name))
+			if (name && DeclaredTypes->ContainsKey(name))
 			{
-				if (st = dynamic_cast<EnumType^>(DeclaredNamedTypes[name]); st == nullptr)
+				if (enumType = dynamic_cast<EnumType^>(DeclaredTypes[name]); enumType == nullptr)
 					throw gcnew FormatException("Attempt to redeclare type '" + name + "'.");
 
-				if (st->Defined)
-					return st;
+				if (enumType->Defined)
+					return enumType;
 
-				lexer.MoveNext();
+				_lexer.MoveNext();
 			}
 			else
 			{
-				if (st = gcnew EnumType(name); st->Anonymous)
-					name = "enum_" + lexer.TextIndex;
+				if (enumType = gcnew EnumType(name); enumType->Anonymous)
+					name = "enum_" + _lexer.TextIndex;
 				else
 				{
-					name = st->Name;
-					DeclaredNamedTypes[name] = st;
-					lexer.MoveNext();
+					name = enumType->Name;
+					DeclaredTypes[name] = enumType;
+					_lexer.MoveNext();
 				}
 
-				st->Name = String::Join("__", Enumerable::Append(% frame, name));
+				enumType->Name = String::Join("__", Enumerable::Append(% frame, name));
 			}
 		}
 
-		if (lexer.Value != "{")
+		if (_lexer.Value != "{")
 			throw gcnew FormatException("Enumeration has to be defined.");
 
-		if (!allowDef)
+		if (!allowDefinition)
 			throw gcnew FormatException("Enumeration definition not allowed here.");
 
-		st->Define();
+		enumType->Define();
 
 		for (; ; )
 		{
-			lexer.MoveNext();
+			_lexer.MoveNext();
 
-			switch (lexer.Group)
+			switch (_lexer.Group)
 			{
 			case Lexer::RegexGroups::Name:
 				for (; ; )
 				{
-					if (st->Enumerators->Contains(lexer.Value))
-						throw gcnew ArgumentException("Duplicate enumerator '" + lexer.Value + "'.");
+					if (enumType->Enumerators->Contains(_lexer.Value))
+						throw gcnew ArgumentException("Duplicate enumerator '" + _lexer.Value + "'.");
 
-					for each (auto decls in DeclArray)
-						for each (auto decl in decls)
-							if (decl.Name == lexer.Value)
+					for each (auto declarations in DeclArray)
+						for each (auto declaration in declarations)
+							if (declaration.Name == _lexer.Value)
 								throw gcnew FormatException("This name had been used before.");
 					
-					if (!enums.TryAdd(lexer.Value, st->Enumerators->Count))
+					if (!enums.TryAdd(_lexer.Value, enumType->Enumerators->Count))
 						throw gcnew ArgumentException("Enumerator already declared.");
 
-					st->Enumerators->Add(lexer.Value);
+					enumType->Enumerators->Add(_lexer.Value);
 					
-					if (lexer.MoveNext(); lexer.Value != ",")
+					if (_lexer.MoveNext(); _lexer.Value != ",")
 						break;
 
-					lexer.MoveNext();
+					_lexer.MoveNext();
 				}
 
 			default:
-				if (lexer.Value == "}")
+				if (_lexer.Value == "}")
 				{
-					if (st->Enumerators->Count == 0)
+					if (enumType->Enumerators->Count == 0)
 						throw gcnew FormatException("'enum' can't be empty.");
 
-					st->Define();
-					return st;
+					enumType->Define();
+					return enumType;
 				}
 
 				throw gcnew FormatException("Unexpected token");
@@ -815,9 +815,9 @@ namespace DeclParser
 
 	Declaration^ TypeParser::LookupTypedef(String^ name)
 	{
-		for each (auto x in DeclArray[1])
-			if (x.Name == name)
-				return x.Decl;
+		for each (auto typeDef in DeclArray[1])
+			if (typeDef.Name == name)
+				return typeDef.Declaration;
 
 		return nullptr;
 	}

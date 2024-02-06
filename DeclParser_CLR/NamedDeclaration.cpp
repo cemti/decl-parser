@@ -4,20 +4,20 @@ using namespace System;
 
 namespace DeclParser
 {
-	NamedDeclaration::NamedDeclaration(String^ name, Declaration^ decl)
+	NamedDeclaration::NamedDeclaration(String^ name, DeclParser::Declaration^ declaration)
 	{
 		Name = name;
-		Decl = decl;
+		Declaration = declaration;
 	}
 
-	void NamedDeclaration::Deconstruct(String^% name, Declaration^% decl)
+	void NamedDeclaration::Deconstruct(String^% name, DeclParser::Declaration^% declaration)
 	{
 		name = Name;
-		decl = Decl;
+		declaration = Declaration;
 	}
 
 	String^ NamedDeclaration::ToString()
 	{
-		return Declaration::DeclarationToString(Decl, Name);
+		return DeclParser::Declaration::DeclarationToString(Declaration, Name);
 	}
 }

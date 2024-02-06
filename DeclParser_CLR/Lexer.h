@@ -27,18 +27,18 @@ namespace DeclParser
 (?'name'\w+)|
 (?'unknown'""(\\""|.)*?""|\S))";
 
-		static initonly System::Text::RegularExpressions::RegexOptions s_options =
+		static initonly System::Text::RegularExpressions::RegexOptions _options =
 			System::Text::RegularExpressions::RegexOptions::Compiled |
 			System::Text::RegularExpressions::RegexOptions::Multiline |
 			System::Text::RegularExpressions::RegexOptions::IgnorePatternWhitespace |
 			System::Text::RegularExpressions::RegexOptions::Singleline |
 			System::Text::RegularExpressions::RegexOptions::ExplicitCapture;
 
-		static System::Text::RegularExpressions::Regex _regex{ pattern, s_options };
+		static System::Text::RegularExpressions::Regex _regex{ pattern, _options };
 
 		System::Collections::Generic::Dictionary<int, int> _skipIndices;
 		System::Collections::Generic::List<System::ValueTuple<RegexGroups, System::Text::RegularExpressions::Match^>> _groups;
-		initonly System::String^ _str;
+		initonly System::String^ _input;
 	public:
 		property int Index;
 

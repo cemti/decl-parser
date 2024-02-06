@@ -6,15 +6,15 @@ namespace DeclParser
 	public value struct NamedDeclaration
 	{
 		property System::String^ Name;
-		property Declaration^ Decl;
+		property Declaration^ Declaration;
 
-		NamedDeclaration(System::String^ name, Declaration^ decl);
+		NamedDeclaration(System::String^ name, DeclParser::Declaration^ declaration);
 
 		void Deconstruct(
 			[System::Runtime::InteropServices::Out]
 			System::String^% name,
 			[System::Runtime::InteropServices::Out]
-			Declaration^% decl);
+			DeclParser::Declaration^% declaration);
 
 		System::String^ ToString() override;
 	};

@@ -16,7 +16,7 @@ namespace DeclParser
 			__identifier(const) = 1, __identifier(volatile), __identifier(restrict) = 4
 		};
 
-		static System::String^ QualifiersToString(Qualifiers q);
+		static System::String^ QualifiersToString(Qualifiers qualifiers);
 		static System::String^ TypeToString(BaseType^ type, System::String^ name, bool anonProto);
 
 		property Qualifiers Qualifier;
@@ -26,8 +26,8 @@ namespace DeclParser
 			bool get();
 		}
 
-		virtual int SizeOf(DataModel);
-		virtual void SetQualifier(Qualifiers q);
+		virtual int SizeOf(DataModel dataModel);
+		virtual void SetQualifier(Qualifiers qualifiers);
 
 		virtual System::Object^ Clone();
 		System::String^ ToString() override;

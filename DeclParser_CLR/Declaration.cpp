@@ -10,26 +10,26 @@ namespace DeclParser
         return bool(Specifier);
     }
     
-	String^ Declaration::DeclarationToString(Declaration^ decl, String^ name)
+	String^ Declaration::DeclarationToString(Declaration^ declaration, String^ name)
 	{
-		auto en = Enumerable::Repeat(BaseType::TypeToString(decl->Type, name, false), 1);
+		auto en = Enumerable::Repeat(BaseType::TypeToString(declaration->Type, name, false), 1);
 
-		if (decl->Inline)
+		if (declaration->Inline)
 			Enumerable::Prepend<String^>(en, "inline");
 
-		if (decl->HasSpecifier)
-			Enumerable::Prepend(en, decl->Specifier.ToString());
+		if (declaration->HasSpecifier)
+			Enumerable::Prepend(en, declaration->Specifier.ToString());
 
 		return String::Join(L' ', en);
 	}
 
-	Declaration::Declaration(Declaration^ decl) : Declaration(decl->Type, decl->Specifier, decl->Inline) { }
+	Declaration::Declaration(Declaration^ declaration) : Declaration(declaration->Type, declaration->Specifier, declaration->Inline) { }
 
-	Declaration::Declaration(BaseType^ type) : Declaration(type, StorageSpecifiers(), false) { }
+	Declaration::Declaration(BaseType^ type) : Declaration(type, StorageSpecifier(), false) { }
 
-	Declaration::Declaration(BaseType^ type, StorageSpecifiers specifier) : Declaration(type, specifier, false) { }
+	Declaration::Declaration(BaseType^ type, StorageSpecifier specifier) : Declaration(type, specifier, false) { }
 
-	Declaration::Declaration(BaseType^ type, StorageSpecifiers specifier, bool isInline)
+	Declaration::Declaration(BaseType^ type, StorageSpecifier specifier, bool isInline)
 	{
 		Type = type;
 		Specifier = specifier;

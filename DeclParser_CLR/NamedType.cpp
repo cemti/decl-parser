@@ -6,27 +6,27 @@ namespace DeclParser
 {
 	bool NamedType::Anonymous::get()
 	{
-		return anon;
+		return _anonymous;
 	}
 
 	bool NamedType::Defined::get()
 	{
-		return stage > 0;
+		return _stage > 0;
 	}
 
 	bool NamedType::Instantiable::get()
 	{
-		return stage == 2;
+		return _stage == 2;
 	}
 	
-	NamedType::NamedType(String^ name, bool instantiable) : anon(String::IsNullOrWhiteSpace(name)), stage(instantiable ? 2 : 0)
+	NamedType::NamedType(String^ name, bool instantiable) : _anonymous(String::IsNullOrWhiteSpace(name)), _stage(instantiable ? 2 : 0)
 	{
 		Name = name;
 	}
 
 	void NamedType::Define()
 	{
-		if (stage != 2)
-			++stage;
+		if (_stage != 2)
+			++_stage;
 	}
 }

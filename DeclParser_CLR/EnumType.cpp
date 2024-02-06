@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "DataTypes.h"
 using namespace System;
+using namespace Collections::Generic;
 
 namespace DeclParser
 {
@@ -20,7 +21,7 @@ namespace DeclParser
 
     EnumType::EnumType(String^ name, bool complete) : NamedType(name, complete)
     {
-        Enumerators = gcnew Enums;
+        Enumerators = gcnew List<String^>;
     }
 
     int EnumType::SizeOf(DataModel)
