@@ -19,6 +19,9 @@
     <Filter Include="Source Files\DataTypes">
       <UniqueIdentifier>{af3918a4-a1cf-4a43-b84f-3a0dbb19e110}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\TypeParser">
+      <UniqueIdentifier>{ecbf291e-3453-4efc-b38b-41b461ca0f13}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -121,6 +124,15 @@
     </ClCompile>
     <ClCompile Include="ArrayType.cpp">
       <Filter>Source Files\DataTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="ParseTypeFragments.cpp">
+      <Filter>Source Files\TypeParser</Filter>
+    </ClCompile>
+    <ClCompile Include="ParseCompositeType.cpp">
+      <Filter>Source Files\TypeParser</Filter>
+    </ClCompile>
+    <ClCompile Include="ParseParameters.cpp">
+      <Filter>Source Files\TypeParser</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
