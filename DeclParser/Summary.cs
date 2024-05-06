@@ -36,12 +36,8 @@ namespace DeclParser
 
             while (type is not null)
             {
-                {
-                    var qualifiers = QualifiersToString(type.Qualifiers);
-
-                    if (!string.IsNullOrEmpty(qualifiers))
-                        name.Append(qualifiers.ToLower().Replace("const", "constant")).Append(' ');
-                }
+                if (QualifiersToString(type.Qualifiers) is var qualifiers && !string.IsNullOrEmpty(qualifiers))
+                    name.Append(qualifiers.ToLower().Replace("const", "constant")).Append(' ');
 
                 if (type is CompositeType cType)
                 {
@@ -84,9 +80,7 @@ namespace DeclParser
                             if (simple)
                                 goto outer;
 
-                            if (!fType1.HasParameters)
-                                name.Append(" with no parameters");
-                            else
+                            if (fType1.HasParameters)
                             {
                                 name.Append($" with {fType1.Parameters.Count} parameter");
 
@@ -97,6 +91,8 @@ namespace DeclParser
                                     .AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Declaration.Type, a.Name, false)))
                                     .Append(')');
                             }
+                            else
+                                name.Append(" with no parameters");
 
                             if (deadEnd)
                                 goto outer;
@@ -231,7 +227,7 @@ namespace DeclParser
                     tType = cType.Decay;
                 }
 
-                if (tType is NamedType nType && nType.Instantiable && !_nameSet.Contains(nType.Name))
+                if (tType is NamedType { Instantiable: true }  nType && !_nameSet.Contains(nType.Name))
                 {
                     if (nType.Qualifiers != TypeQualifiers.None)
                     {
@@ -332,16 +328,13 @@ namespace DeclParser
 
                                 break;
 
-                            case StructType sType:
-                                if (sType is { Instantiable: true, Members.Count: > 0 })
-                                {
-                                    var sNode = node.Nodes.Add($"Members ({sType.Members.Count})");
-                                    sNode.Tag = sType.Members;
-                                    sNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
+                            case StructType sType when (sType is { Instantiable: true, Members.Count: > 0 }):
+                                var sNode = node.Nodes.Add($"Members ({sType.Members.Count})");
+                                sNode.Tag = sType.Members;
+                                sNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
 
-                                    foreach (var memb in sType.Members)
-                                        AddNode(sNode, memb.Name, memb);
-                                }
+                                foreach (var memb in sType.Members)
+                                    AddNode(sNode, memb.Name, memb);
 
                                 break;
 
@@ -352,9 +345,7 @@ namespace DeclParser
                                 break;
                         }
 
-                        int size = _parser.SizeOf(type);
-
-                        if (size > 0)
+                        if (_parser.SizeOf(type) is > 0 and int size)
                         {
                             var sizeInfo = $"Size: {size} byte";
 
