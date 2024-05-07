@@ -36,8 +36,8 @@ namespace DeclParser
 
 		int SizeOf(BaseType^);
 
-		TypeParser(BaseType::DataModel dataModel) : _dataModel(dataModel), _permissive() { }
-		TypeParser(System::String^ input, BaseType::DataModel dataModel) : TypeParser(input, dataModel, false) { }
+		TypeParser(BaseType::DataModel dataModel);
+		TypeParser(System::String^ input, BaseType::DataModel dataModel);
 		TypeParser(System::String^, BaseType::DataModel, bool);
 	};
 }

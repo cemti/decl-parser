@@ -67,7 +67,7 @@ namespace DeclParser
 			int get();
 		}
 
-		Lexer() { }
+		Lexer();
 		Lexer(System::String^);
 
 		bool TryMoveNext();

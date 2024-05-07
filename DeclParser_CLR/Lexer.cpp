@@ -31,6 +31,8 @@ namespace DeclParser
 		return CurrentMatch->Index;
 	}
 	
+	Lexer::Lexer() { }
+
 	Lexer::Lexer(String^ input) : _input(input)
 	{ 
 		Index = -1;

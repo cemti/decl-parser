@@ -37,6 +37,10 @@ namespace DeclParser
 		}
 	}
 
+	TypeParser::TypeParser(BaseType::DataModel dataModel) : _dataModel(dataModel), _permissive() { }
+
+	TypeParser::TypeParser(String^ input, BaseType::DataModel dataModel) : TypeParser(input, dataModel, false) { }
+
 	void TypeParser::GreedySkipTokens()
 	{
 		for (; ; )
