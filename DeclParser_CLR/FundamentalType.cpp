@@ -104,7 +104,7 @@ namespace DeclParser
 						return dataModel == DataModel::LP64 ? 8 : 4;
 
 					default:
-						return 4;
+						return dataModel == DataModel::LP32 ? 2 : 4;
 				}
 
 			default:
