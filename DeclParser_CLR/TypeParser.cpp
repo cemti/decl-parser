@@ -13,11 +13,6 @@ namespace DeclParser
 	
 	TypeParser::TypeParser(String^ input, BaseType::DataModel dataModel, bool permissive) : _lexer(input), _permissive(permissive), _dataModel(dataModel)
 	{
-		FundamentalType::TypeLength length{ };
-
-		if (dataModel >= BaseType::DataModel::LLP64)
-			length = FundamentalType::TypeLength::LongLong;
-		
 		DeclArray = gcnew array<List<NamedDeclaration>^> { gcnew List<NamedDeclaration>, gcnew List<NamedDeclaration> };
 		DeclaredTypes = gcnew Dictionary<String^, NamedType^>;
 		
