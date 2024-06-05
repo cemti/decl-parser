@@ -10,10 +10,10 @@ namespace DeclParser
 		auto chain = Enumerable::Repeat(BaseType::TypeToString(declaration->Type, name, false), 1);
 
 		if (declaration->Inline)
-			Enumerable::Prepend<String^>(chain, "inline");
+			chain = Enumerable::Prepend<String^>(chain, "inline");
 
 		if (declaration->Specifier != StorageSpecifier::None)
-			Enumerable::Prepend(chain, declaration->Specifier.ToString()->ToLower());
+			chain = Enumerable::Prepend(chain, declaration->Specifier.ToString()->ToLower());
 
 		return String::Join(L' ', chain);
 	}
