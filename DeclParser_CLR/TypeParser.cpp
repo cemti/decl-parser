@@ -36,19 +36,41 @@ namespace DeclParser
 
 	TypeParser::TypeParser(String^ input, BaseType::DataModel dataModel) : TypeParser(input, dataModel, false) { }
 
-	void TypeParser::GreedySkipTokens()
+	void TypeParser::GreedySkipTokens(bool isDeclarationAssignment)
 	{
+		int nest = 0;
+		
 		for (; ; )
 		{
 			_lexer.MoveNext();
 
-			if (_lexer.Value == ":")
-				return;
-
-			if (_lexer.Value == ";" || _lexer.Value == "{" || _lexer.Value == "}" || _lexer.Value == ")")
+			if (_lexer.Value == "(")
 			{
-				--_lexer.Index;
-				return;
+				++nest;
+			}
+			else if (nest != 0)
+			{
+				if (_lexer.Value == ")")
+					--nest;
+			}
+			else
+			{
+				if (_lexer.Value == ":")
+					return;
+
+				if (_lexer.Value == ";" || _lexer.Value == ",")
+				{
+					if (!isDeclarationAssignment)
+						--_lexer.Index;
+
+					return;
+				}
+
+				if (_lexer.Value == "{" || _lexer.Value == "}")
+				{
+					--_lexer.Index;
+					return;
+				}
 			}
 		}
 	}
@@ -90,7 +112,7 @@ namespace DeclParser
 							_lexer.MoveNext();
 					}
 					else
-						GreedySkipTokens();
+						GreedySkipTokens(false);
 
 					break;
 				}
@@ -108,6 +130,9 @@ namespace DeclParser
 					auto initialDecl = gcnew Declaration(initialType);
 					auto postType = ParsePostType(initialDecl);
 					bool isFnDefinition = false;
+
+					if (_lexer.Value == "=")
+						GreedySkipTokens(true);
 
 					switch (declIndex)
 					{
@@ -152,7 +177,16 @@ namespace DeclParser
 					}
 
 					isFnDefinition = declIndex == 0 && functionType && _lexer.Value == "{";
-					postType.Name = String::Join("__", Enumerable::Append(%frame, postType.Name));
+
+					if (Enumerable::Any(% frame))
+					{
+						postType.Name = String::Format("{0}__{1}", _lexer.TextIndex, postType.Name);
+						
+						if (postType.Declaration->Specifier == Declaration::StorageSpecifier::None)
+							postType.Declaration->Specifier = Declaration::StorageSpecifier::Auto;
+					}
+
+					postType.Name = String::Join("__", Enumerable::Append(%frame, postType.Name));					
 
 					for each (auto declaration in DeclArray[declIndex])
 						if (declaration.Name && declaration.Name == postType.Name)
@@ -209,7 +243,7 @@ namespace DeclParser
 						--_lexer.Index;
 				}
 					
-				GreedySkipTokens();
+				GreedySkipTokens(false);
 				break;
 
 			case Lexer::RegexGroups::ScopeBrace:

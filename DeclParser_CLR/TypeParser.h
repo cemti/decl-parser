@@ -13,7 +13,7 @@ namespace DeclParser
 		const BaseType::DataModel _dataModel;
 		const bool _permissive; // allows ignoring other C statements
 
-		void GreedySkipTokens();
+		void GreedySkipTokens(bool isDeclarationAssignment);
 
 		void Parse();
 		Declaration^ ParseInitialType(bool allowDefinition);
