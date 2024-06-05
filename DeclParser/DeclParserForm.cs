@@ -42,7 +42,9 @@ namespace DeclParser
             wizard.ShowDialog();
 
             if (wizard.DialogResult == DialogResult.OK)
+            {
                 textBox1.SelectedText = wizard.Buffer;
+            }
         }
 
         private void ParseClickFile(object sender, EventArgs e)

@@ -22,21 +22,29 @@
             if (adder.Result is NamedDeclaration declaration)
             {
                 if (string.IsNullOrWhiteSpace(declaration.Name))
+                {
                     declaration.Name = "sample";
-               
+                }
+
                 treeView1.Nodes.Add(declaration.ToString()).Tag = declaration;
             }
             else
+            {
                 Close();
+            }
         }
 
         private void BeforeSelectNode(object sender, TreeViewCancelEventArgs e)
         {
             if (e.Node is null)
+            {
                 return;
+            }
 
             foreach (ToolStripItem item in addNodeButton.DropDownItems)
+            {
                 item.Enabled = true;
+            }
 
             addNodeButton.Enabled = true; 
 
@@ -55,10 +63,14 @@
                     reviewToolStripMenuItem.Enabled = true;
 
                     if (e.Node != treeView1.Nodes[0])
+                    {
                         removeNodeButton.Enabled = true;
+                    }
 
                     if (e.Node.Nodes.Count > 0)
+                    {
                         addNodeButton.Enabled = false;
+                    }
 
                     break;
 
@@ -66,24 +78,34 @@
                     if (nType.Instantiable)
                     {
                         foreach (ToolStripItem c in addNodeButton.DropDownItems)
+                        {
                             c.Enabled = false;
+                        }
 
                         declarationToolStripMenuItem.Enabled = true;
                     }
                     else
+                    {
                         addNodeButton.Enabled = false;
+                    }
 
                     removeNodeButton.Enabled = true;
                     break;
 
                 case FunctionType fType:
                     foreach (ToolStripItem c in addNodeButton.DropDownItems)
+                    {
                         c.Enabled = false;
+                    }
 
                     if (fType.Parameters.Count > 0 && fType.Parameters[^1].Declaration.Type is EllipsisType)
+                    {
                         addNodeButton.Enabled = false;
+                    }
                     else
+                    {
                         variadicToolStripMenuItem.Enabled = true;
+                    }
 
                     declarationToolStripMenuItem.Enabled = true;
                     removeNodeButton.Enabled = true;
@@ -150,23 +172,31 @@
                     else
                     {
                         if (node.Tag is FunctionType fType)
+                        {
                             fType.Parameters.Add(declaration);
+                        }
                         else if (node.Tag is StructType sType)
                         {
                             if (anon)
+                            {
                                 declaration.Name = NewUniqueName();
+                            }
 
                             sType.Members.Add(declaration);
                         }
 
                         if (declaration.Declaration.Type is EllipsisType)
+                        {
                             inNode = node.Nodes.Add("...");
+                        }
                         else
                         {
                             inNode = node.Nodes.Add(declaration.ToString());
 
                             if (anon)
+                            {
                                 inNode.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
+                            }
 
                             AddTypeToNode(inNode, declaration.Declaration.Type);
                         }
@@ -180,9 +210,13 @@
             if (inNode is not null)
             {
                 if (obj is CompositeType { Decay: not null } cType2)
+                {
                     AddTypeToNode(inNode, cType2.Decay);
+                }
                 else
+                {
                     treeView1.SelectedNode = inNode;
+                }
             }
         }
 
@@ -229,7 +263,9 @@
             wizard.ShowDialog();
 
             if (wizard.Result is BaseType or NamedDeclaration)
+            {
                 AddTypeToNode(wizard.Result);
+            }
         }
 
         private void AddFunctionOnClick(object sender, EventArgs e) => AddTypeToNode(new FunctionType(null, new List<NamedDeclaration>()));
@@ -241,7 +277,9 @@
             wizard.ShowDialog();
 
             if (wizard.Result is FundamentalType fType)
+            {
                 AddTypeToNode(fType);
+            }
         }
 
         private void Commit(object sender, EventArgs e)

@@ -24,8 +24,10 @@ namespace DeclParser
             foreach (var (name, declaration) in parser.Variables)
             {
                 if (declaration?.Type is null)
+                {
                     throw new ArgumentException("Declaration is null.");
-                
+                }
+
                 AddNode(AddNode(treeView1.Nodes, name, new NamedDeclaration(name, declaration)), declaration.Type);
             }
         }
@@ -37,7 +39,9 @@ namespace DeclParser
             while (type is not null)
             {
                 if (QualifiersToString(type.Qualifiers) is var qualifiers && !string.IsNullOrEmpty(qualifiers))
+                {
                     name.Append(qualifiers.ToLower().Replace("const", "constant")).Append(' ');
+                }
 
                 if (type is CompositeType cType)
                 {
@@ -49,7 +53,9 @@ namespace DeclParser
                             name.Append("pointer");
 
                             if (simple || deadEnd)
+                            {
                                 goto outer;
+                            }
 
                             name.Append(" to a ");
                             break;
@@ -63,13 +69,19 @@ namespace DeclParser
                                 name.Append(count).Append(" instance");
 
                                 if (count != 1)
+                                {
                                     name.Append('s');
+                                }
                             }
                             else
+                            {
                                 name.Append("any instances");
+                            }
 
                             if (simple || deadEnd)
+                            {
                                 goto outer;
+                            }
 
                             name.Append(" of a ");
                             break;
@@ -78,24 +90,32 @@ namespace DeclParser
                             name.Append("function");
 
                             if (simple)
+                            {
                                 goto outer;
+                            }
 
                             if (fType1.HasParameters)
                             {
                                 name.Append($" with {fType1.Parameters.Count} parameter");
 
                                 if (fType1.Parameters.Count != 1)
+                                {
                                     name.Append('s');
+                                }
 
                                 name.Append(" (")
                                     .AppendJoin(", ", fType1.Parameters.Select(a => TypeToString(a.Declaration.Type, a.Name, false)))
                                     .Append(')');
                             }
                             else
+                            {
                                 name.Append(" with no parameters");
+                            }
 
                             if (deadEnd)
+                            {
                                 goto outer;
+                            }
 
                             name.Append(", returning a ");
                             break;
@@ -109,7 +129,9 @@ namespace DeclParser
                     {
                         case FundamentalType fType:
                             if (fType.Sign != FundamentalType.TypeSign.None)
+                            {
                                 name.Append(fType.Sign).Append(' ');
+                            }
 
                             name.Append(fType.Type switch
                             {
@@ -127,14 +149,18 @@ namespace DeclParser
                                 name.Append($" that occupies {size} byte");
 
                                 if (size != 1)
+                                {
                                     name.Append('s');
+                                }
                             }
 
                             break;
 
                         case NamedType nType:
                             if (!nType.Instantiable)
+                            {
                                 name.Append("incomplete ");
+                            }
 
                             name
                                 .Append(type switch
@@ -169,7 +195,9 @@ namespace DeclParser
             node.Tag = tag;
 
             if (empty)
+            {
                 node.NodeFont = new Font(treeView1.Font, FontStyle.Italic);
+            }
 
             return node;
         }
@@ -183,7 +211,9 @@ namespace DeclParser
             var anon = nType.Anonymous && allowTypedef;
 
             if (anon)
+            {
                 sb.Append("typedef ");
+            }
 
             sb.Append(TypeToString(nType, null, anon));
 
@@ -206,12 +236,16 @@ namespace DeclParser
                 sb.Append('}');
 
                 if (anon)
+                {
                     sb.Append(' ').Append(nType.Name);
+                }
 
                 sb.AppendLine(";").AppendLine();
             }
             else
+            {
                 sb.AppendLine(";");
+            }
         }
 
         private void PopulateText(IList<NamedDeclaration> list, StringBuilder sb, bool depth = false)
@@ -221,8 +255,12 @@ namespace DeclParser
                 while (tType is CompositeType cType)
                 {
                     if (tType is FunctionType fType)
+                    {
                         foreach (var (_, decl) in fType.Parameters)
+                        {
                             Recursive(decl.Type);
+                        }
+                    }
 
                     tType = cType.Decay;
                 }
@@ -246,7 +284,9 @@ namespace DeclParser
                 Recursive(v.Declaration.Type);
 
                 if (depth)
+                {
                     sb.Append("  ");
+                }
 
                 sb.AppendLine($"{v};");
             }
@@ -255,7 +295,9 @@ namespace DeclParser
         private void BeforeNodeSelection(object sender, TreeViewCancelEventArgs e)
         {
             if (e.Node is null)
+            {
                 return;
+            }
 
             StringBuilder sb = new();
 
@@ -269,9 +311,13 @@ namespace DeclParser
                     sb.AppendLine($"// {Verbose(type, _parser)}");
 
                     if (type is NamedType nType)
+                    {
                         PopulateText(nType, sb, true);
+                    }
                     else
+                    {
                         PopulateText(new List<NamedDeclaration> { new(null, new Declaration(type, 0)) }, sb);
+                    }
 
                     break;
 
@@ -290,12 +336,16 @@ namespace DeclParser
         private void BeforeNodeExpansion(object sender, TreeViewCancelEventArgs e)
         {
             if (e.Node is null)
+            {
                 return;
+            }
 
             foreach (TreeNode node in e.Node.Nodes)
             {
                 if (node.Name != string.Empty)
+                {
                     continue;
+                }
 
                 node.Name = "visited";
 
@@ -320,9 +370,13 @@ namespace DeclParser
                                     foreach (var parameter in fType.Parameters)
                                     {
                                         if (parameter.Declaration.Type is EllipsisType)
+                                        {
                                             AddNode(pNode, "...");
+                                        }
                                         else
+                                        {
                                             AddNode(pNode, parameter.Name, parameter);
+                                        }
                                     }
                                 }
 
@@ -334,13 +388,17 @@ namespace DeclParser
                                 sNode.NodeFont = new Font(treeView1.Font, FontStyle.Bold);
 
                                 foreach (var memb in sType.Members)
+                                {
                                     AddNode(sNode, memb.Name, memb);
+                                }
 
                                 break;
 
                             case EnumType enumType:
                                 foreach (var name in enumType.Enumerators)
+                                {
                                     AddNode(node, name);
+                                }
 
                                 break;
                         }
@@ -350,7 +408,9 @@ namespace DeclParser
                             var sizeInfo = $"Size: {size} byte";
 
                             if (size != 1)
+                            {
                                 sizeInfo += 's';
+                            }
 
                             AddNode(node, sizeInfo, size).NodeFont = new Font(treeView1.Font, FontStyle.Bold);
                         }

@@ -106,7 +106,9 @@
                         : new StructType(suName.Text, unionRB.Checked, !definedCB.Checked);
 
                     if (sType.Anonymous)
+                    {
                         sType.Name = "__custom_" + Guid.NewGuid().ToString().Replace("-", string.Empty);
+                    }
 
                     _type = sType;
                     goto default;
@@ -140,7 +142,9 @@
                 if (row.Tag is ArrayType aType)
                 {
                     if (int.TryParse((string)cell.Value, out var count))
+                    {
                         aType.Count = count;
+                    }
                     else
                     {
                         cell.Value = "unspecified";
@@ -152,7 +156,9 @@
         private void PointerCellValueChanged(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && sender is DataGridView view && view.Rows[e.RowIndex].Tag is PointerType pType)
+            {
                 pType.Qualifiers ^= Enum.Parse<TypeQualifiers>(view.Columns[e.ColumnIndex].HeaderText, true);
+            }
         }
 
         private void GenericRowsAdded<T>(object? sender, DataGridViewRowsAddedEventArgs e) where T : CompositeType, new()
@@ -162,7 +168,9 @@
                 var index = e.RowIndex;
 
                 if (index + 1 == view.Rows.Count)
+                {
                     --index;
+                }
 
                 T type = new();
                 view.Rows[index].Tag = type;
@@ -172,11 +180,15 @@
                     var cell = view[0, index];
 
                     if (string.IsNullOrWhiteSpace((string)cell.Value))
+                    {
                         cell.Value = string.Empty;
+                    }
                 }
 
                 if (index > 0 && view.Rows[index - 1].Tag is T aType)
+                {
                     aType.Decay = type;
+                }
 
                 button1.Enabled = true;
             }
@@ -187,7 +199,9 @@
             if (e.Row is not null && sender is DataGridView view)
             {
                 if (e.Row.Index > 0 && view.Rows[e.Row.Index - 1].Tag is CompositeType aType)
+                {
                     aType.Decay = ((CompositeType?)view.Rows[e.Row.Index].Tag)?.Decay;
+                }
 
                 button1.Enabled = view.Rows.Count > 2;
             }
@@ -196,7 +210,9 @@
         private void GenericCellMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
         {
             if (sender is DataGridView view && e.ColumnIndex == -1 && e.RowIndex + 1 == view.Rows.Count)
+            {
                 view.Rows.Add();
+            }
         }
     }
 }
