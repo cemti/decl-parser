@@ -11,8 +11,8 @@ namespace DeclParser
 			Brace, ArrayBrace, ScopeBrace, Special, Integer, Name, Unknown
 		};
 	private:
-		initonly static System::String^ pattern = R"((?'comment'/(\*.*?\*/|/.*?$))|
-((?'sign'(un)?signed)|
+		initonly static System::String^ pattern = R"((/\*((?'comment'/\*)|(?'-comment'\*/)|(?!\*/).)+\*/|(//|\#).*?(?<!\\\s*)$)|
+\b((?'sign'(un)?signed)|
 (?'length'short|long)|
 (?'type'void|char|int|float|double)|
 (?'sType'struct|union|enum)|
