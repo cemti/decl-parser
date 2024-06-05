@@ -67,7 +67,8 @@ namespace DeclParser
 			type = cType->Decay;
 		}
 
-		chain = Enumerable::Repeat(String::Concat(chain), 1);
+		if (Enumerable::Any(chain))
+			chain = Enumerable::Repeat(String::Concat(chain), 1);
 
 		if (auto dType = dynamic_cast<FundamentalType^>(type))
 		{
