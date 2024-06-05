@@ -38,6 +38,6 @@ namespace DeclParser
 
 		TypeParser(BaseType::DataModel dataModel);
 		TypeParser(System::String^ input, BaseType::DataModel dataModel);
-		TypeParser(System::String^, BaseType::DataModel, bool);
+		TypeParser(System::String^ input, BaseType::DataModel dataModel, bool permissive);
 	};
 }
