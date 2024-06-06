@@ -44,13 +44,13 @@ namespace DeclParser
 		{
 			_lexer.MoveNext();
 
-			if (_lexer.Value == "(")
+			if (_lexer.Value == "(" || (isDeclarationAssignment && _lexer.Value == "{"))
 			{
 				++nest;
 			}
 			else if (nest != 0)
 			{
-				if (_lexer.Value == ")")
+				if (_lexer.Value == ")" || (isDeclarationAssignment && _lexer.Value == "}"))
 					--nest;
 			}
 			else
@@ -66,7 +66,7 @@ namespace DeclParser
 					return;
 				}
 
-				if (_lexer.Value == "{" || _lexer.Value == "}")
+				if (_lexer.Value == "{" || (!isDeclarationAssignment && _lexer.Value == "}"))
 				{
 					--_lexer.Index;
 					return;
