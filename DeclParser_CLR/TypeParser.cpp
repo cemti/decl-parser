@@ -15,6 +15,22 @@ namespace DeclParser
 	{
 		DeclArray = gcnew array<List<NamedDeclaration>^> { gcnew List<NamedDeclaration>, gcnew List<NamedDeclaration> };
 		DeclaredTypes = gcnew Dictionary<String^, NamedType^>;
+
+		DeclArray[1]->Add(NamedDeclaration("size_t",
+			gcnew Declaration(
+				gcnew FundamentalType(
+					FundamentalType::DataType::Int,
+					FundamentalType::TypeSign::Unsigned,
+					FundamentalType::TypeLength::LongLong)
+		)));
+
+		DeclArray[1]->Add(NamedDeclaration("ptrdiff_t",
+			gcnew Declaration(
+				gcnew FundamentalType(
+					FundamentalType::DataType::Int,
+					FundamentalType::TypeSign::Signed,
+					FundamentalType::TypeLength::LongLong)
+			)));
 		
 		try
 		{
